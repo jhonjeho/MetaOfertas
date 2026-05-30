@@ -7,6 +7,7 @@
 // Solo estos correos podrán acceder al Panel de Administración.
 const ADMIN_EMAILS = [
     'jhon.jeho@gmail.com',       // ← Reemplaza con tu correo real de administrador
+    'rigobertoalvarez8899@gmail.com',
     // 'admin2@gmail.com',        // ← Descomenta y agrega más correos si necesitas
 ];
 
