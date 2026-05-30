@@ -217,7 +217,7 @@ async function loginWithGoogleAsClient() {
         showAuthLoadingState(true);
         // Guardar intención de redirect para procesarla al volver
         sessionStorage.setItem('_authRedirectIntent', 'client');
-        await auth.signInWithRedirect(googleProvider);
+        await auth.signInWithPopup(googleProvider);
         // La página se redirige a Google; el resultado se procesa en handleRedirectOnLoad()
     } catch (error) {
         showAuthLoadingState(false);
@@ -242,7 +242,7 @@ async function loginWithGoogleAsAdmin() {
     try {
         // Guardar intención de redirect para procesarla al volver
         sessionStorage.setItem('_authRedirectIntent', 'admin');
-        await auth.signInWithRedirect(googleProvider);
+        await auth.signInWithPopup(googleProvider);
         // La página se redirige a Google; el resultado se procesa en handleRedirectOnLoad()
     } catch (error) {
         console.error('[MetaOfertas] Error al iniciar redirect admin:', error);
