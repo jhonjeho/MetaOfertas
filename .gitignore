@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Dependencias
 node_modules/
 npm-debug.log
@@ -32,38 +31,3 @@ build/
 # Temporal
 tmp/
 temp/
-=======
-# Dependencias
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Base de datos
-*.db
-*.db-journal
-
-# Variables de entorno
-.env
-.env.local
-.env.*.local
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Logs
-logs/
-*.log
-
-# Distribución
-dist/
-build/
-
-# Temporal
-tmp/
-temp/
->>>>>>> 501eef96e7e1bf4b282028af1297426bac033904
