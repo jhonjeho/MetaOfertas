@@ -142,6 +142,7 @@ async function handleAddProduct(e) {
     const category = document.getElementById('productCategory').value;
     const emoji = document.getElementById('productEmoji').value || '📦';
     const imageInput = document.getElementById('productImage');
+    const submitBtn = document.querySelector('#productForm button[type="submit"]');
 
     // Validaciones
     if (!title || !category || !originalPrice || !offerPrice) {
@@ -154,58 +155,65 @@ async function handleAddProduct(e) {
         return;
     }
 
-    const submitBtn = document.querySelector('#productForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = '⏳ Guardando...';
     }
 
-    // Procesar imagen
-    if (imageInput && imageInput.files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const product = {
-                title,
-                originalPrice,
-                offerPrice,
-                category,
-                emoji,
-                image: event.target.result
-            };
-            try {
-                await addProduct(product);
-                resetForm();
-                showAdminToast('✅ Producto agregado exitosamente', 'success');
-            } catch (err) {
-                alert('❌ Error al guardar el producto. Intenta de nuevo.');
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear Producto`;
-                }
+    try {
+        // ── PROCESAR IMAGEN CON COMPRESIÓN ──────────────────────
+        let imageURL = null;
+        if (imageInput && imageInput.files.length > 0) {
+            const imageFile = imageInput.files[0];
+            
+            // Validar que sea imagen
+            if (!isValidImageFile(imageFile)) {
+                alert('❌ Imagen no válida. Usa JPEG, PNG, WebP o GIF (máx 20MB)');
+                return;
             }
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
+
+            // Mostrar progreso
+            showAdminToast('⏳ Comprimiendo y subiendo imagen...', 'info');
+            
+            // Generar ID único para la imagen
+            const imageId = generateImageId();
+            
+            // Comprimir y subir con callback de progreso
+            imageURL = await compressAndUploadImage(
+                imageFile,
+                imageId,
+                (progress) => {
+                    if (submitBtn) {
+                        submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
+                    }
+                }
+            );
+            
+            console.log('[Admin] Imagen subida exitosamente:', imageURL);
+            showAdminToast('✅ Imagen comprimida y subida exitosamente', 'success');
+        }
+
+        // ── CREAR PRODUCTO ──────────────────────────────────────
         const product = {
             title,
             originalPrice,
             offerPrice,
             category,
             emoji,
-            image: null
+            image: imageURL // URL de Firebase Storage (o null)
         };
-        try {
-            await addProduct(product);
-            resetForm();
-            showAdminToast('✅ Producto agregado exitosamente', 'success');
-        } catch (err) {
-            alert('❌ Error al guardar el producto. Intenta de nuevo.');
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear Producto`;
-            }
+
+        await addProduct(product);
+        resetForm();
+        showAdminToast('✅ Producto agregado exitosamente', 'success');
+
+    } catch (error) {
+        console.error('[Admin] Error al agregar producto:', error);
+        alert(`❌ Error: ${error.message}`);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear Producto`;
         }
     }
 }
@@ -318,6 +326,8 @@ async function handleEditProduct(e) {
     const offerPrice = parseFloat(document.getElementById('editProductOffer').value);
     const category = document.getElementById('editProductCategory').value;
     const emoji = document.getElementById('editProductEmoji').value || '📦';
+    const imageInput = document.getElementById('editProductImage');
+    const submitBtn = document.querySelector('#editProductForm button[type="submit"]');
 
     if (!title || !category || !originalPrice || !offerPrice) {
         alert('❌ Por favor completa todos los campos requeridos');
@@ -329,44 +339,62 @@ async function handleEditProduct(e) {
         return;
     }
 
-    const submitBtn = document.querySelector('#editProductForm button[type="submit"]');
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = '⏳ Guardando...';
     }
 
-    const imageInput = document.getElementById('editProductImage');
-    const currentProduct = getAllProducts().find(p => p.id === productId);
+    try {
+        const currentProduct = getAllProducts().find(p => p.id === productId);
+        let imageURL = currentProduct ? currentProduct.image : null;
 
-    const processUpdate = async (imageData) => {
+        // ── PROCESAR IMAGEN CON COMPRESIÓN SI HAY NUEVA ──────────
+        if (imageInput && imageInput.files.length > 0) {
+            const imageFile = imageInput.files[0];
+            
+            if (!isValidImageFile(imageFile)) {
+                alert('❌ Imagen no válida. Usa JPEG, PNG, WebP o GIF (máx 20MB)');
+                return;
+            }
+
+            showAdminToast('⏳ Comprimiendo y subiendo imagen...', 'info');
+            const imageId = generateImageId();
+            
+            imageURL = await compressAndUploadImage(
+                imageFile,
+                imageId,
+                (progress) => {
+                    if (submitBtn) {
+                        submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
+                    }
+                }
+            );
+            
+            showAdminToast('✅ Imagen actualizada', 'success');
+        }
+
+        // ── ACTUALIZAR PRODUCTO ────────────────────────────────
         const updatedData = {
             title,
             originalPrice,
             offerPrice,
             category,
             emoji,
-            image: imageData
+            image: imageURL
         };
-        try {
-            await updateProduct(productId, updatedData);
-            closeEditModal();
-            showAdminToast('✅ Producto actualizado correctamente', 'success');
-        } catch (err) {
-            alert('❌ Error al actualizar el producto. Intenta de nuevo.');
-        } finally {
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Guardar Cambios`;
-            }
-        }
-    };
 
-    if (imageInput && imageInput.files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = (event) => processUpdate(event.target.result);
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        await processUpdate(currentProduct ? currentProduct.image : null);
+        await updateProduct(productId, updatedData);
+        closeEditModal();
+        showAdminToast('✅ Producto actualizado correctamente', 'success');
+
+    } catch (error) {
+        console.error('[Admin] Error al editar producto:', error);
+        alert(`❌ Error: ${error.message}`);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Guardar Cambios`;
+        }
     }
 }
 
