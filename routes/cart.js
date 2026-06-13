@@ -1,6 +1,5 @@
 import express from 'express';
 import { allQuery, runQuery, getQuery } from '../database.js';
-import { v4 as uuidv4 } from 'crypto';
 
 const router = express.Router();
 
