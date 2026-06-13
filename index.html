@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -528,3 +529,535 @@
 
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaOfertas — Ofertas Premium del Día</title>
+
+    <!-- ===== SEO META TAGS ===== -->
+    <meta name="description" content="Descubre las mejores ofertas diarias en productos frescos y de despensa. Precios imbatibles actualizados cada mañana. ¡Ahorra hasta un 47% hoy!">
+    <meta name="keywords" content="ofertas, descuentos, productos frescos, frutas, verduras, carnes, lácteos, despensa, MetaOfertas">
+    <meta name="author" content="MetaOfertas">
+    <meta name="robots" content="index, follow">
+
+    <!-- ===== OPEN GRAPH (WhatsApp / Social) ===== -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MetaOfertas — Ofertas Premium del Día 🛒">
+    <meta property="og:description" content="Descuentos de hasta 47% en productos frescos y de despensa. Actualizados cada mañana. ¡Compra hoy y ahorra!">
+    <meta property="og:image" content="https://metaofertas.com/og-preview.jpg">
+    <meta property="og:url" content="https://metaofertas.com">
+    <meta property="og:site_name" content="MetaOfertas">
+    <meta property="og:locale" content="es_CO">
+
+    <!-- ===== TWITTER CARD ===== -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="MetaOfertas — Ofertas Premium del Día">
+    <meta name="twitter:description" content="Descuentos de hasta 47% en productos frescos. ¡Ahorra hoy!">
+    <meta name="twitter:image" content="https://metaofertas.com/og-preview.jpg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- ===== FIREBASE v9 COMPAT CDN ===== -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* ── SPIN ANIMATION ─────────────────────────────────── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin-icon { animation: spin 0.8s linear infinite; }
+
+        /* ── BOTÓN GOOGLE ────────────────────────────────────── */
+        .btn-google {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 0.85rem 1.25rem;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: var(--radius-md);
+            color: #f0fdf4;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-bottom: 1.25rem;
+            letter-spacing: -0.01em;
+        }
+        .btn-google:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.28);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .btn-google:active { transform: translateY(0) scale(0.98); }
+        .btn-google:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* ── DIVIDER ─────────────────────────────────────────── */
+        .modal-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0.5rem 0 1.25rem;
+            color: rgba(240,253,244,0.3);
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .modal-divider::before,
+        .modal-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* ── GOOGLE EMAIL ROW ────────────────────────────────── */
+        #googleEmailRow {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 0.6rem 0.9rem;
+            background: rgba(74,222,128,0.06);
+            border: 1px solid rgba(74,222,128,0.15);
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            font-size: 0.82rem;
+            color: rgba(240,253,244,0.7);
+        }
+        #googleEmailRow svg { flex-shrink: 0; color: #34d399; }
+
+        /* ── GOOGLE PROFILE PHOTO ────────────────────────────── */
+        #googleProfilePhoto {
+            display: none;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        /* ── EXTRA DATA SECTION ──────────────────────────────── */
+        #extraDataSection { display: none; }
+
+        /* ── NAVBAR USER INFO ────────────────────────────────── */
+        #navbarUserInfo {
+            display: flex;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== NAVBAR GLASSMORPHISM ===== -->
+    <header class="navbar">
+        <div class="navbar-container">
+            <div class="logo">
+                <div class="logo-mark">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#logoGrad)" stroke="url(#logoGrad)" stroke-width="1" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#4ade80"/>
+                                <stop offset="1" stop-color="#d4a017"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="logo-text">MetaOfertas</span>
+            </div>
+            <div class="header-info">
+                <p class="date-today" id="todayDate"></p>
+                <!-- Área de usuario autenticado -->
+                <div id="navbarUserInfo"></div>
+                <button class="cart-button" id="cartButton">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Carrito</span>
+                    <span class="cart-badge" id="cartCounter">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== LANDING PAGE — PANTALLA DE BIENVENIDA ===== -->
+    <section class="landing-welcome" id="landingWelcome" aria-label="Bienvenida a MetaOfertas">
+
+        <!-- Resplandores de fondo -->
+        <div class="landing-glow landing-glow-1" aria-hidden="true"></div>
+        <div class="landing-glow landing-glow-2" aria-hidden="true"></div>
+        <div class="landing-glow landing-glow-3" aria-hidden="true"></div>
+        <div class="landing-glow landing-glow-4" aria-hidden="true"></div>
+
+        <!-- Textura de cuadrícula matemática -->
+        <div class="landing-grid-overlay" aria-hidden="true"></div>
+
+        <!-- Partículas flotantes decorativas -->
+        <div class="landing-particles" aria-hidden="true">
+            <span class="particle particle-1">✦</span>
+            <span class="particle particle-2">◆</span>
+            <span class="particle particle-3">✦</span>
+            <span class="particle particle-4">◆</span>
+            <span class="particle particle-5">✦</span>
+        </div>
+
+        <!-- Contenido principal de la landing -->
+        <div class="landing-content">
+
+            <!-- Badge animado -->
+            <div class="landing-badge landing-animate-1">
+                <span class="landing-badge-dot"></span>
+                <span>Ofertas actualizadas hoy</span>
+                <span class="landing-badge-sep">·</span>
+                <span class="landing-badge-highlight">Hasta 47% OFF</span>
+            </div>
+
+            <!-- Título principal H1 -->
+            <h1 class="landing-title landing-animate-2">
+                <span class="landing-title-line1">Ahorra en</span>
+                <span class="landing-title-line2">cada compra</span>
+                <span class="landing-title-accent">del día</span>
+            </h1>
+
+            <!-- Subtítulo persuasivo -->
+            <p class="landing-subtitle landing-animate-3">
+                Descuentos reales en productos frescos y de despensa,<br class="landing-br-desktop">
+                seleccionados y actualizados cada mañana para ti.
+            </p>
+
+            <!-- Métricas de confianza -->
+            <div class="landing-stats landing-animate-4">
+                <div class="landing-stat">
+                    <span class="landing-stat-value">47%</span>
+                    <span class="landing-stat-label">Descuento máximo</span>
+                </div>
+                <div class="landing-stat-divider" aria-hidden="true"></div>
+                <div class="landing-stat">
+                    <span class="landing-stat-value">Diario</span>
+                    <span class="landing-stat-label">Actualización</span>
+                </div>
+                <div class="landing-stat-divider" aria-hidden="true"></div>
+                <div class="landing-stat">
+                    <span class="landing-stat-value">100%</span>
+                    <span class="landing-stat-label">Productos frescos</span>
+                </div>
+            </div>
+
+            <!-- CTAs -->
+            <div class="landing-ctas landing-animate-5">
+                <!-- CTA Principal: Ver Ofertas -->
+                <button class="landing-btn-primary" id="btnVerOfertas" aria-label="Ver ofertas del día">
+                    <span class="landing-btn-shimmer" aria-hidden="true"></span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span>Ver Ofertas del Día</span>
+                    <svg class="landing-btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                </button>
+
+                <!-- CTA Secundario: Crear Cuenta -->
+                <button class="landing-btn-secondary" id="btnCrearCuenta" aria-label="Crear cuenta o iniciar sesión">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M16 11l2 2 4-4"/></svg>
+                    <span>Crear Cuenta / Ingresar</span>
+                </button>
+            </div>
+
+            <!-- Indicador de scroll -->
+            <div class="landing-scroll-hint landing-animate-6" aria-hidden="true">
+                <span>Desliza para explorar</span>
+                <div class="landing-scroll-mouse">
+                    <div class="landing-scroll-wheel"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tarjetas flotantes decorativas (producto preview) -->
+        <div class="landing-floating-cards" aria-hidden="true">
+            <div class="landing-float-card landing-float-card-1">
+                <span class="lfc-emoji">🍎</span>
+                <div class="lfc-info">
+                    <span class="lfc-name">Manzana Roja</span>
+                    <span class="lfc-badge">-47% OFF</span>
+                </div>
+            </div>
+            <div class="landing-float-card landing-float-card-2">
+                <span class="lfc-emoji">🍗</span>
+                <div class="lfc-info">
+                    <span class="lfc-name">Pechuga Fresca</span>
+                    <span class="lfc-badge">-39% OFF</span>
+                </div>
+            </div>
+            <div class="landing-float-card landing-float-card-3">
+                <span class="lfc-emoji">🥛</span>
+                <div class="lfc-info">
+                    <span class="lfc-name">Leche Premium</span>
+                    <span class="lfc-badge">-36% OFF</span>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ===== HERO SECTION (Banner del catálogo) ===== -->
+    <section class="hero" id="catalogoSection">
+        <div class="hero-glow hero-glow-1"></div>
+        <div class="hero-glow hero-glow-2"></div>
+        <div class="hero-glow hero-glow-3"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="hero-badge-dot"></span>
+                Actualizado hoy
+            </div>
+            <h2 class="hero-title">Ofertas del Día</h2>
+            <p class="hero-subtitle">Descubre los mejores descuentos, seleccionados y actualizados cada mañana para ti.</p>
+        </div>
+        <div class="hero-grid-overlay"></div>
+    </section>
+
+    <!-- ===== FILTROS CÁPSULA ===== -->
+    <section class="filters-section">
+        <div class="container">
+            <div class="filters-wrapper">
+                <button class="filter-btn active" data-filter="all">Todos</button>
+                <button class="filter-btn" data-filter="vegetables">
+                    <span class="filter-icon">🥬</span> Frutas y Verduras
+                </button>
+                <button class="filter-btn" data-filter="meats">
+                    <span class="filter-icon">🍗</span> Carnes y Pollo
+                </button>
+                <button class="filter-btn" data-filter="dairy">
+                    <span class="filter-icon">🥛</span> Lácteos y Huevos
+                </button>
+                <button class="filter-btn" data-filter="pantry">
+                    <span class="filter-icon">🥫</span> Despensa
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== GRID DE PRODUCTOS ===== -->
+    <main class="container main-content">
+        <div class="products-grid" id="productsGrid"></div>
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <div class="empty-icon">📭</div>
+            <h3>Sin ofertas disponibles</h3>
+            <p>No hay ofertas en esta categoría aún. ¡Vuelve pronto!</p>
+        </div>
+    </main>
+
+    <!-- ===== BOTÓN ADMIN FLOTANTE ===== -->
+    <button class="admin-access" id="adminAccessBtn" title="Modo Administrador">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+
+    <!-- ===== MODAL CONTRASEÑA ADMIN (redirige a admin.html) ===== -->
+    <div id="passwordModal" class="modal" style="display: none;">
+        <div class="modal-content glass-modal">
+            <button class="modal-close-btn close">&times;</button>
+            <div class="modal-icon-wrap">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h2>Acceso Administrador</h2>
+            <p>Ingresa la contraseña para acceder al panel de control</p>
+            <input type="password" id="adminPassword" placeholder="Contraseña" class="modal-input">
+            <button class="btn-primary" id="submitPassword">Entrar al Panel</button>
+            <p class="password-hint">Contraseña por defecto: <strong>admin123</strong></p>
+        </div>
+    </div>
+
+    <!-- ===== MODAL REGISTRO / LOGIN CON GOOGLE ===== -->
+    <div id="registerModal" class="modal" style="display: none;">
+        <div class="modal-content glass-modal">
+            <button class="modal-close-btn" id="closeRegister">&times;</button>
+
+            <!-- Foto de perfil de Google (visible solo para usuarios nuevos) -->
+            <div id="googleProfilePhoto"></div>
+
+            <div class="modal-icon-wrap" id="registerModalIcon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+
+            <h2>Crear Cuenta</h2>
+            <p class="modal-subtitle" style="font-size:0.875rem;color:rgba(240,253,244,0.65);margin-bottom:1.5rem;line-height:1.6;">
+                Regístrate con Google para hacer pedidos
+            </p>
+
+            <!-- ── SECCIÓN 1: Botón de Google ── -->
+            <div id="googleLoginSection">
+                <button class="btn-google" id="btnGoogleLogin" type="button">
+                    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                        <path fill="#FF3D00" d="m6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/>
+                        <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                        <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+                    </svg>
+                    Registrarse con Google
+                </button>
+                <p style="font-size:0.75rem;color:rgba(240,253,244,0.35);text-align:center;line-height:1.5;">
+                    Al registrarte aceptas nuestros términos de servicio.<br>
+                    Tu información está protegida con Google.
+                </p>
+            </div>
+
+            <!-- ── SECCIÓN 2: Datos adicionales (solo para usuarios nuevos) ── -->
+            <div id="extraDataSection">
+                <!-- Correo de Google (solo lectura) -->
+                <div id="googleEmailRow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    <span id="googleEmailDisplay"></span>
+                </div>
+
+                <form id="registerForm" class="register-form">
+                    <!-- Nombre (pre-llenado desde Google, solo lectura) -->
+                    <input type="text" id="registerName" placeholder="Nombre completo" class="modal-input" required>
+
+                    <!-- Teléfono / WhatsApp -->
+                    <input type="tel" id="registerWhatsapp" placeholder="📱 WhatsApp (Ej: 3125551234)" class="modal-input" required>
+
+                    <!-- Dirección de entrega -->
+                    <input type="text" id="registerBarrio" placeholder="📍 Barrio / Dirección de entrega" class="modal-input" required>
+
+                    <!-- Tipo de cliente -->
+                    <select id="registerTipo" class="modal-input" required>
+                        <option value="">Tipo de cliente</option>
+                        <option value="persona">👤 Persona</option>
+                        <option value="tienda">🏪 Tienda</option>
+                    </select>
+
+                    <button type="submit" class="btn-primary" id="btnCompleteProfile">
+                        Completar Registro
+                    </button>
+                </form>
+            </div>
+
+            <!-- Mensaje de error -->
+            <p id="registerError" class="error-message" style="display: none;"></p>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-logo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="url(#footerGrad)" stroke="url(#footerGrad)" stroke-width="1" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="footerGrad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#4ade80"/>
+                            <stop offset="1" stop-color="#d4a017"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>MetaOfertas</span>
+            </div>
+            <p>&copy; 2026 MetaOfertas. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- ===== SIDEBAR CARRITO ===== -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <div class="cart-header-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                <h2>Tu Carrito</h2>
+            </div>
+            <button class="close-cart" id="closeCart">&times;</button>
+        </div>
+        <div class="cart-items" id="cartItems">
+            <p class="empty-cart-message">Tu carrito está vacío.</p>
+        </div>
+        <div class="cart-summary">
+            <span class="cart-summary-label">Total</span>
+            <span class="cart-total" id="cartTotal">$0</span>
+        </div>
+        <button class="btn-whatsapp" id="checkoutWhatsapp">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            Finalizar por WhatsApp
+        </button>
+    </div>
+
+    <!-- ===== MODAL IMAGEN GRANDE ===== -->
+    <div id="imageModal" class="image-modal">
+        <span class="close-modal" id="closeImageModal">&times;</span>
+        <img class="image-modal-content" id="modalTargetImage" src="" alt="Producto en grande">
+        <div id="modalCaption" class="modal-caption"></div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <!-- 1. Firebase Config (inicializa firebase, auth, db) -->
+    <script src="firebase-config.js"></script>
+    <!-- 2. Lógica principal de la app -->
+    <script src="app.js"></script>
+    <!-- 3. Autenticación Firebase -->
+    <script src="firebase-auth.js"></script>
+    <!-- 4. Registro de usuarios -->
+    <script src="register.js"></script>
+
+    <!-- ===== LANDING PAGE LOGIC ===== -->
+    <script>
+    (function() {
+        'use strict';
+
+        // ── Smooth scroll al catálogo ──────────────────────────
+        document.getElementById('btnVerOfertas').addEventListener('click', function() {
+            const catalogoSection = document.getElementById('catalogoSection');
+            if (catalogoSection) {
+                catalogoSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+
+        // ── Abrir modal de registro ────────────────────────────
+        document.getElementById('btnCrearCuenta').addEventListener('click', function() {
+            if (typeof showRegisterModal === 'function') {
+                showRegisterModal();
+            } else {
+                document.getElementById('registerModal').style.display = 'flex';
+            }
+        });
+
+        // ── Lógica del modal de registro: mostrar sección correcta ──
+        // Cuando firebase-auth.js llama a showCompleteProfileModal(),
+        // necesitamos mostrar la sección de datos extra y ocultar el botón de Google.
+        const originalShowCompleteProfile = window.showCompleteProfileModal;
+        window.showCompleteProfileModal = function(googleUser) {
+            // Ocultar sección de Google, mostrar formulario de datos
+            const googleSection = document.getElementById('googleLoginSection');
+            const extraDataSection = document.getElementById('extraDataSection');
+            const registerModalIcon = document.getElementById('registerModalIcon');
+
+            if (googleSection) googleSection.style.display = 'none';
+            if (extraDataSection) extraDataSection.style.display = 'block';
+            if (registerModalIcon) registerModalIcon.style.display = 'none';
+
+            // Llamar a la función original de firebase-auth.js
+            if (typeof originalShowCompleteProfile === 'function') {
+                originalShowCompleteProfile(googleUser);
+            }
+
+            // Mostrar correo de Google
+            const emailRow = document.getElementById('googleEmailRow');
+            if (emailRow) emailRow.style.display = 'flex';
+        };
+
+        // ── Animaciones de entrada con IntersectionObserver ───
+        const animatedEls = document.querySelectorAll(
+            '.landing-animate-1, .landing-animate-2, .landing-animate-3, ' +
+            '.landing-animate-4, .landing-animate-5, .landing-animate-6, ' +
+            '.landing-float-card-1, .landing-float-card-2, .landing-float-card-3'
+        );
+
+        animatedEls.forEach(function(el) {
+            el.style.visibility = 'visible';
+        });
+
+    })();
+    </script>
+
+</body>
+</html>
+>>>>>>> 501eef96e7e1bf4b282028af1297426bac033904

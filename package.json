@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "metaofertasapi",
   "version": "1.0.0",
@@ -26,3 +27,33 @@
   },
   "devDependencies": {}
 }
+=======
+{
+  "name": "metaofertasapi",
+  "version": "1.0.0",
+  "description": "API REST para MetaOfertas - Supermercado de Ofertas Diarias",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "supermercado",
+    "ofertas",
+    "api",
+    "rest"
+  ],
+  "author": "MetaOfertas Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {}
+}
+>>>>>>> 501eef96e7e1bf4b282028af1297426bac033904
