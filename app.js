@@ -365,7 +365,7 @@ function renderProducts() {
                     <span class="offer-price">${formatPrice(product.offerPrice)}</span>
                 </div>
                 <p class="savings">✦ Ahorras ${savings}</p>
-                <button class="btn-add-cart" onclick="addToCart(${safeId})">¡Lo Quiero!</button>
+                <button class="btn-add-cart" onclick='addToCart(${safeId})'>¡Lo Quiero!</button>
             </div>
         </div>`;
     }).join('');
@@ -493,13 +493,13 @@ function updateCartUI() {
                         <h4>${item.title}</h4>
                         <p>Precio: ${formatPrice(item.offerPrice)}</p>
                         <div class="cart-item-quantity-controls">
-                            <button class="quantity-btn" onclick="changeQuantity(${safeId}, -1)">-</button>
+                            <button class="quantity-btn" onclick='changeQuantity(${safeId}, -1)'>-</button>
                             <span class="item-quantity">${item.quantity}</span>
-                            <button class="quantity-btn" onclick="changeQuantity(${safeId}, 1)">+</button>
+                            <button class="quantity-btn" onclick='changeQuantity(${safeId}, 1)'>+</button>
                         </div>
                     </div>
                     <span class="cart-item-total">${formatPrice(itemTotal)}</span>
-                    <button class="remove-item-btn" onclick="removeFromCart(${safeId})">&times;</button>
+                    <button class="remove-item-btn" onclick='removeFromCart(${safeId})'>&times;</button>
                 </div>
             `;
         });
