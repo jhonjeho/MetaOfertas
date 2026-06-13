@@ -174,6 +174,7 @@ async function handleAddProduct(e) {
 
             // Mostrar progreso
             showAdminToast('⏳ Comprimiendo y subiendo imagen...', 'info');
+            console.log('[Admin] Iniciando carga de imagen:', imageFile.name, imageFile.size, imageFile.type);
             
             // Generar ID único para la imagen
             const imageId = generateImageId();
@@ -183,6 +184,7 @@ async function handleAddProduct(e) {
                 imageFile,
                 imageId,
                 (progress) => {
+                    console.log('[Admin] Progress callback:', progress);
                     if (submitBtn) {
                         submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
                     }
