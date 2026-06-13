@@ -159,10 +159,24 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                 onProgress(0);
             }
 
+            let progressTimer = setTimeout(() => {
+                if (onProgress && typeof onProgress === 'function') {
+                    onProgress(5);
+                }
+            }, 3000);
+
+            const cleanupProgressTimer = () => {
+                if (progressTimer) {
+                    clearTimeout(progressTimer);
+                    progressTimer = null;
+                }
+            };
+
             // ── ESCUCHAR PROGRESO ───────────────────────────────
             uploadTask.on(
                 'state_changed',
                 (snapshot) => {
+                    cleanupProgressTimer();
                     const totalBytes = snapshot.totalBytes || blob.size;
                     const progress = totalBytes > 0
                         ? (snapshot.bytesTransferred / totalBytes) * 100
@@ -178,15 +192,16 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                     }
                 },
                 (error) => {
+                    cleanupProgressTimer();
                     console.error('[ImageOptimizer] Error de carga:', error);
                     reject(new Error(`Error al subir: ${error.message}`));
                 },
                 async () => {
+                    cleanupProgressTimer();
                     try {
                         if (onProgress && typeof onProgress === 'function') {
                             onProgress(100);
                         }
-                        // ── OBTENER URL PÚBLICA ─────────────────
                         const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
                         console.log(`[ImageOptimizer] URL pública: ${downloadURL}`);
                         resolve(downloadURL);
