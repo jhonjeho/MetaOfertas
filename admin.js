@@ -186,7 +186,11 @@ async function handleAddProduct(e) {
                 (progress) => {
                     console.log('[Admin] Progress callback:', progress);
                     if (submitBtn) {
-                        submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
+                        if (progress <= 1) {
+                            submitBtn.textContent = '⏳ Subiendo...';
+                        } else {
+                            submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
+                        }
                     }
                 }
             );

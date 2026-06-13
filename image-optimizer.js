@@ -152,7 +152,7 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
 
             // ── CREAR TAREA DE CARGA CON PROGRESO ───────────────
             const uploadTask = ref.put(blob, {
-                contentType: 'image/jpeg'
+                contentType: blob.type || 'image/jpeg'
             });
             console.log('[ImageOptimizer] uploadTask created', uploadTask);
             console.log('[ImageOptimizer] upload ref path', ref.fullPath, 'blob size', blob.size);
@@ -209,7 +209,6 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                 clearTimeout(fallbackTimeout);
             };
 
-            // ── ESCUCHAR PROGRESO ───────────────────────────────
             uploadTask.on(
                 'state_changed',
                 (snapshot) => {
@@ -219,54 +218,28 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                         ? (snapshot.bytesTransferred / totalBytes) * 100
                         : 0;
                     const normalized = Number.isFinite(progress) ? progress : lastProgress;
+                    const stateLabel = snapshot.state || 'unknown';
+
                     console.log('[ImageOptimizer] state_changed event', {
                         bytesTransferred: snapshot.bytesTransferred,
                         totalBytes,
                         progress: normalized,
-                        state: snapshot.state
+                        state: stateLabel
                     });
-                    updateProgress(normalized);
-                },
-                (error) => {
-                    cleanupAll();
-                    console.error('[ImageOptimizer] Error de carga:', error);
-                    reject(new Error(`Error al subir: ${error.message}`));
-                },
-                async () => {
-                    cleanupAll();
-                    updateProgress(100);
-                    try {
-                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                        console.log(`[ImageOptimizer] URL pública: ${downloadURL}`);
-                        resolve(downloadURL);
-                    } catch (error) {
-                        reject(new Error(`Error al obtener URL: ${error.message}`));
+
+                    if (stateLabel === 'paused' && lastProgress < 100) {
+                        console.warn('[ImageOptimizer] Upload task paused unexpectedly');
                     }
-                }
-            );
-            // ── ESCUCHAR PROGRESO ───────────────────────────────
-            uploadTask.on(
-                'state_changed',
-                (snapshot) => {
-                    const totalBytes = snapshot.totalBytes || blob.size;
-                    const progress = totalBytes > 0
-                        ? (snapshot.bytesTransferred / totalBytes) * 100
-                        : 0;
-                    const normalized = Number.isFinite(progress) ? progress : lastProgress;
-                    console.log(`[ImageOptimizer] Progreso: ${normalized.toFixed(2)}%`, {
-                        bytesTransferred: snapshot.bytesTransferred,
-                        totalBytes,
-                        state: snapshot.state
-                    });
+
                     updateProgress(normalized);
                 },
                 (error) => {
-                    cleanupFallback();
+                    cleanupAll();
                     console.error('[ImageOptimizer] Error de carga:', error);
                     reject(new Error(`Error al subir: ${error.message}`));
                 },
                 async () => {
-                    cleanupFallback();
+                    cleanupAll();
                     updateProgress(100);
                     try {
                         const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
