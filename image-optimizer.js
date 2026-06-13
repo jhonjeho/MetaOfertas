@@ -21,13 +21,16 @@ async function compressAndUploadImage(imageFile, uploadPath, onProgress = null) 
             throw new Error('El archivo debe ser una imagen válida');
         }
 
-        // ── 2. LEER IMAGEN ORIGINAL ──────────────────────────────
-        const originalImage = await readImageAsDataURL(imageFile);
+        // ── 2. CREAR OBJECT URL PARA ACCESO DIRECTO ──────────────
+        const objectURL = URL.createObjectURL(imageFile);
         console.log(`[ImageOptimizer] Imagen original: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
 
         // ── 3. COMPRIMIR USANDO CANVAS ──────────────────────────
-        const compressedBlob = await compressImageViaCanvas(originalImage);
+        const compressedBlob = await compressImageViaCanvas(objectURL);
         console.log(`[ImageOptimizer] Imagen comprimida: ${(compressedBlob.size / 1024).toFixed(2)} KB`);
+
+        // Liberar object URL después de usar
+        URL.revokeObjectURL(objectURL);
 
         // ── 4. VALIDAR TAMAÑO ───────────────────────────────────
         const MAX_SIZE_MB = 5; // Límite máximo en MB
@@ -51,7 +54,7 @@ async function compressAndUploadImage(imageFile, uploadPath, onProgress = null) 
 }
 
 /**
- * Lee un archivo como Data URL.
+ * Lee un archivo como Data URL (DEPRECATED - usar URL.createObjectURL en su lugar).
  * @private
  */
 function readImageAsDataURL(file) {
