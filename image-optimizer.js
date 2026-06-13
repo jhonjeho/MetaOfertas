@@ -21,16 +21,11 @@ async function compressAndUploadImage(imageFile, uploadPath, onProgress = null) 
             throw new Error('El archivo debe ser una imagen válida');
         }
 
-        // ── 2. CREAR OBJECT URL PARA ACCESO DIRECTO ──────────────
-        const objectURL = URL.createObjectURL(imageFile);
         console.log(`[ImageOptimizer] Imagen original: ${(imageFile.size / 1024 / 1024).toFixed(2)} MB`);
 
         // ── 3. COMPRIMIR USANDO CANVAS ──────────────────────────
-        const compressedBlob = await compressImageViaCanvas(objectURL);
+        const compressedBlob = await compressImageViaCanvas(imageFile);
         console.log(`[ImageOptimizer] Imagen comprimida: ${(compressedBlob.size / 1024).toFixed(2)} KB`);
-
-        // Liberar object URL después de usar
-        URL.revokeObjectURL(objectURL);
 
         // ── 4. VALIDAR TAMAÑO ───────────────────────────────────
         const MAX_SIZE_MB = 5; // Límite máximo en MB
@@ -72,69 +67,71 @@ function readImageAsDataURL(file) {
  * - Comprime a JPEG con 80% de calidad
  * @private
  */
-function compressImageViaCanvas(dataURL) {
+async function compressImageViaCanvas(blobSource) {
+    try {
+        const bitmap = await loadImageBitmap(blobSource);
+        const MAX_WIDTH = 1080;
+        const MAX_HEIGHT = 1080;
+        let width = bitmap.width;
+        let height = bitmap.height;
+
+        if (width > height) {
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+        } else {
+            if (height > MAX_HEIGHT) {
+                width = Math.round((width * MAX_HEIGHT) / height);
+                height = MAX_HEIGHT;
+            }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d', { alpha: true });
+        if (!ctx) {
+            throw new Error('No se pudo obtener el contexto del canvas');
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(bitmap, 0, 0, width, height);
+
+        if (bitmap.close) {
+            bitmap.close();
+        }
+
+        return await new Promise((resolve, reject) => {
+            canvas.toBlob(
+                (blob) => {
+                    if (!blob) {
+                        reject(new Error('Error al comprimir imagen'));
+                        return;
+                    }
+                    resolve(blob);
+                },
+                'image/jpeg',
+                0.8
+            );
+        });
+    } catch (error) {
+        throw error;
+    }
+}
+
+function loadImageBitmap(blobSource) {
+    if (window.createImageBitmap) {
+        return createImageBitmap(blobSource);
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
-        
-        img.onload = () => {
-            try {
-                // ── CALCULAR NUEVAS DIMENSIONES ──────────────────
-                const MAX_WIDTH = 1080;
-                const MAX_HEIGHT = 1080;
-                let width = img.width;
-                let height = img.height;
-
-                // Mantener proporción
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height = Math.round((height * MAX_WIDTH) / width);
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width = Math.round((width * MAX_HEIGHT) / height);
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                // ── CREAR CANVAS INVISIBLE ──────────────────────
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-
-                const ctx = canvas.getContext('2d', { alpha: true });
-                if (!ctx) {
-                    throw new Error('No se pudo obtener el contexto del canvas');
-                }
-
-                // ── DIBUJAR IMAGEN REDIMENSIONADA ──────────────
-                ctx.fillStyle = '#ffffff'; // Fondo blanco
-                ctx.fillRect(0, 0, width, height);
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // ── CONVERTIR A BLOB JPEG CON 80% CALIDAD ───────
-                canvas.toBlob(
-                    (blob) => {
-                        if (!blob) {
-                            reject(new Error('Error al comprimir imagen'));
-                            return;
-                        }
-                        resolve(blob);
-                    },
-                    'image/jpeg',
-                    0.8 // 80% de calidad
-                );
-
-            } catch (error) {
-                reject(error);
-            }
-        };
-
-        img.onerror = () => {
-            reject(new Error('Error al cargar la imagen'));
-        };
-
-        img.src = dataURL;
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Error al cargar la imagen'));
+        img.src = URL.createObjectURL(blobSource);
     });
 }
 
@@ -158,14 +155,26 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                 contentType: 'image/jpeg'
             });
 
+            if (onProgress && typeof onProgress === 'function') {
+                onProgress(0);
+            }
+
             // ── ESCUCHAR PROGRESO ───────────────────────────────
             uploadTask.on(
                 'state_changed',
                 (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    console.log(`[ImageOptimizer] Progreso: ${progress.toFixed(2)}%`);
+                    const totalBytes = snapshot.totalBytes || blob.size;
+                    const progress = totalBytes > 0
+                        ? (snapshot.bytesTransferred / totalBytes) * 100
+                        : 0;
+                    const normalized = Number.isFinite(progress) ? progress : 0;
+                    console.log(`[ImageOptimizer] Progreso: ${normalized.toFixed(2)}%`, {
+                        bytesTransferred: snapshot.bytesTransferred,
+                        totalBytes,
+                        state: snapshot.state
+                    });
                     if (onProgress && typeof onProgress === 'function') {
-                        onProgress(progress);
+                        onProgress(normalized);
                     }
                 },
                 (error) => {
@@ -174,6 +183,9 @@ function uploadBlobToFirebaseStorage(blob, uploadPath, onProgress) {
                 },
                 async () => {
                     try {
+                        if (onProgress && typeof onProgress === 'function') {
+                            onProgress(100);
+                        }
                         // ── OBTENER URL PÚBLICA ─────────────────
                         const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
                         console.log(`[ImageOptimizer] URL pública: ${downloadURL}`);
