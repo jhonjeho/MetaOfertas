@@ -1,6 +1,7 @@
 /* ============================================
    METAAOFERTAS - LÓGICA PANEL ADMIN (admin.js)
    Actualizado para usar IDs de Firestore (strings)
+   Imágenes guardadas como Base64 en Firestore (sin Firebase Storage)
    ============================================ */
 
 let currentEditingProductId = null; // Ahora es un string (ID de Firestore)
@@ -160,7 +161,7 @@ async function handleAddProduct(e) {
     }
 
     try {
-        let imageURL = null;
+        let imageDataURL = null;
 
         if (imageInput && imageInput.files.length > 0) {
             const imageFile = imageInput.files[0];
@@ -170,25 +171,24 @@ async function handleAddProduct(e) {
             }
 
             showAdminToast('⏳ Comprimiendo imagen...', 'info');
-            console.log('[Admin] Comprimiendo imagen:', imageFile.name, imageFile.size, imageFile.type);
 
-            const compressedBlob = await compressImageFile(imageFile, 1080, 0.75);
-            console.log('[Admin] Imagen comprimida:', compressedBlob.size, compressedBlob.type);
+            if (submitBtn) submitBtn.textContent = '⏳ Comprimiendo...';
 
-            const imageId = generateImageId();
-            showAdminToast('⏳ Subiendo imagen comprimida...', 'info');
+            imageDataURL = await compressImageToBase64(imageFile, 800, 0.70);
 
-            imageURL = await uploadCompressedBlobToFirebase(imageId, compressedBlob, (progress) => {
-                if (!submitBtn) return;
-                if (progress <= 1) {
-                    submitBtn.textContent = '⏳ Subiendo...';
-                } else {
-                    submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
-                }
-            });
+            // Verificar tamaño (Firestore tiene límite de 1MB por documento)
+            const sizeKB = Math.round((imageDataURL.length * 3) / 4 / 1024);
+            console.log(`[Admin] Imagen comprimida: ~${sizeKB}KB`);
 
-            console.log('[Admin] Imagen subida exitosamente:', imageURL);
-            showAdminToast('✅ Imagen comprimida y subida exitosamente', 'success');
+            if (sizeKB > 900) {
+                // Comprimir más si es muy grande
+                imageDataURL = await compressImageToBase64(imageFile, 600, 0.55);
+                const newSizeKB = Math.round((imageDataURL.length * 3) / 4 / 1024);
+                console.log(`[Admin] Re-comprimida: ~${newSizeKB}KB`);
+            }
+
+            if (submitBtn) submitBtn.textContent = '⏳ Guardando...';
+            showAdminToast('✅ Imagen comprimida correctamente', 'success');
         }
 
         const product = {
@@ -197,7 +197,7 @@ async function handleAddProduct(e) {
             offerPrice,
             category,
             emoji,
-            image: imageURL
+            image: imageDataURL
         };
 
         await addProduct(product);
@@ -215,44 +215,51 @@ async function handleAddProduct(e) {
     }
 }
 
-async function compressImageFile(file, maxWidth = 1080, quality = 0.8) {
+/**
+ * Comprime una imagen y la devuelve como Data URL (Base64).
+ * Se guarda directamente en Firestore sin necesidad de Firebase Storage.
+ */
+async function compressImageToBase64(file, maxWidth = 800, quality = 0.70) {
     return new Promise((resolve, reject) => {
         const objectUrl = URL.createObjectURL(file);
         const img = new Image();
-        img.crossOrigin = 'anonymous';
 
         const cleanup = () => {
-            try { URL.revokeObjectURL(objectUrl); } catch (err) {
-                console.warn('[Admin] No se pudo revocar object URL:', err);
-            }
+            try { URL.revokeObjectURL(objectUrl); } catch (err) {}
             img.onload = null;
             img.onerror = null;
         };
 
         img.onerror = () => {
             cleanup();
-            reject(new Error('Error al cargar la imagen para compresión.')); 
+            reject(new Error('Error al cargar la imagen para compresión.'));
         };
 
-        img.onload = async () => {
+        img.onload = () => {
             try {
-                if (typeof img.decode === 'function') {
-                    await img.decode();
-                }
-
                 let width = img.naturalWidth || img.width;
                 let height = img.naturalHeight || img.height;
 
+                // Redimensionar si es más ancha que maxWidth
                 if (width > maxWidth) {
                     const ratio = maxWidth / width;
                     width = Math.round(maxWidth);
                     height = Math.round(height * ratio);
                 }
 
+                // También limitar la altura máxima
+                const maxHeight = 800;
+                if (height > maxHeight) {
+                    const ratio = maxHeight / height;
+                    height = Math.round(maxHeight);
+                    width = Math.round(width * ratio);
+                }
+
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d', { alpha: false });
+
                 if (!ctx) {
                     cleanup();
                     reject(new Error('No se pudo obtener el contexto del canvas.'));
@@ -263,14 +270,9 @@ async function compressImageFile(file, maxWidth = 1080, quality = 0.8) {
                 ctx.fillRect(0, 0, width, height);
                 ctx.drawImage(img, 0, 0, width, height);
 
-                canvas.toBlob((blob) => {
-                    cleanup();
-                    if (!blob) {
-                        reject(new Error('Error al convertir la imagen comprimida al formato Blob.'));
-                        return;
-                    }
-                    resolve(blob);
-                }, 'image/jpeg', quality);
+                cleanup();
+                const dataURL = canvas.toDataURL('image/jpeg', quality);
+                resolve(dataURL);
             } catch (err) {
                 cleanup();
                 reject(err);
@@ -278,43 +280,6 @@ async function compressImageFile(file, maxWidth = 1080, quality = 0.8) {
         };
 
         img.src = objectUrl;
-    });
-}
-
-function uploadCompressedBlobToFirebase(imageId, blob, onProgress) {
-    return new Promise((resolve, reject) => {
-        if (typeof firebase === 'undefined' || !firebase.storage) {
-            reject(new Error('Firebase Storage no está disponible.'));
-            return;
-        }
-
-        const storage = firebase.storage();
-        const ref = storage.ref(`images/${imageId}`);
-        const uploadTask = ref.put(blob, { contentType: 'image/jpeg' });
-
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-                const totalBytes = snapshot.totalBytes || blob.size || 1;
-                const progress = totalBytes > 0
-                    ? (snapshot.bytesTransferred / totalBytes) * 100
-                    : 0;
-                if (typeof onProgress === 'function') {
-                    onProgress(progress);
-                }
-            },
-            (error) => {
-                reject(error);
-            },
-            async () => {
-                try {
-                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                    resolve(downloadURL);
-                } catch (error) {
-                    reject(error);
-                }
-            }
-        );
     });
 }
 
@@ -446,30 +411,29 @@ async function handleEditProduct(e) {
 
     try {
         const currentProduct = getAllProducts().find(p => p.id === productId);
-        let imageURL = currentProduct ? currentProduct.image : null;
+        let imageDataURL = currentProduct ? currentProduct.image : null;
 
-        // ── PROCESAR IMAGEN CON COMPRESIÓN SI HAY NUEVA ──────────
+        // ── PROCESAR IMAGEN SI HAY NUEVA ──────────────────────────
         if (imageInput && imageInput.files.length > 0) {
             const imageFile = imageInput.files[0];
-            
+
             if (!isValidImageFile(imageFile)) {
                 alert('❌ Imagen no válida. Usa JPEG, PNG, WebP o GIF (máx 20MB)');
                 return;
             }
 
-            showAdminToast('⏳ Comprimiendo y subiendo imagen...', 'info');
-            const imageId = generateImageId();
-            
-            imageURL = await compressAndUploadImage(
-                imageFile,
-                imageId,
-                (progress) => {
-                    if (submitBtn) {
-                        submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
-                    }
-                }
-            );
-            
+            showAdminToast('⏳ Comprimiendo imagen...', 'info');
+            if (submitBtn) submitBtn.textContent = '⏳ Comprimiendo...';
+
+            imageDataURL = await compressImageToBase64(imageFile, 800, 0.70);
+
+            // Verificar tamaño
+            const sizeKB = Math.round((imageDataURL.length * 3) / 4 / 1024);
+            if (sizeKB > 900) {
+                imageDataURL = await compressImageToBase64(imageFile, 600, 0.55);
+            }
+
+            if (submitBtn) submitBtn.textContent = '⏳ Guardando...';
             showAdminToast('✅ Imagen actualizada', 'success');
         }
 
@@ -480,7 +444,7 @@ async function handleEditProduct(e) {
             offerPrice,
             category,
             emoji,
-            image: imageURL
+            image: imageDataURL
         };
 
         await updateProduct(productId, updatedData);
@@ -576,6 +540,19 @@ function calculateDiscount(original, offer) {
     return Math.round(((original - offer) / original) * 100);
 }
 
+/**
+ * Valida si un archivo es una imagen soportada.
+ * (Definida aquí como fallback si image-optimizer.js no está cargado)
+ */
+function isValidImageFile(file) {
+    if (typeof window.isValidImageFile === 'function' && window.isValidImageFile !== isValidImageFile) {
+        return window.isValidImageFile(file);
+    }
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const maxSize = 20 * 1024 * 1024; // 20 MB
+    return file && validTypes.includes(file.type) && file.size <= maxSize;
+}
+
 // ── Toast de confirmación para el admin ──────────────────────
 function showAdminToast(message, type = 'success') {
     // Usar la función de firebase-auth.js si está disponible
@@ -589,7 +566,8 @@ function showAdminToast(message, type = 'success') {
 
     const colors = {
         success: { bg: 'rgba(10, 107, 60, 0.95)', border: 'rgba(74, 222, 128, 0.3)' },
-        error:   { bg: 'rgba(127, 29, 29, 0.95)',  border: 'rgba(239, 68, 68, 0.3)' }
+        error:   { bg: 'rgba(127, 29, 29, 0.95)',  border: 'rgba(239, 68, 68, 0.3)' },
+        info:    { bg: 'rgba(30, 64, 175, 0.95)',   border: 'rgba(96, 165, 250, 0.3)' }
     };
     const c = colors[type] || colors.success;
 
