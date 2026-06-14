@@ -172,7 +172,7 @@ async function handleAddProduct(e) {
             showAdminToast('⏳ Comprimiendo imagen...', 'info');
             console.log('[Admin] Comprimiendo imagen:', imageFile.name, imageFile.size, imageFile.type);
 
-            const compressedBlob = await compressImageFile(imageFile, 1080, 0.8);
+            const compressedBlob = await compressImageFile(imageFile, 1080, 0.75);
             console.log('[Admin] Imagen comprimida:', compressedBlob.size, compressedBlob.type);
 
             const imageId = generateImageId();
