@@ -144,7 +144,6 @@ async function handleAddProduct(e) {
     const imageInput = document.getElementById('productImage');
     const submitBtn = document.querySelector('#productForm button[type="submit"]');
 
-    // Validaciones
     if (!title || !category || !originalPrice || !offerPrice) {
         alert('❌ Por favor completa todos los campos requeridos');
         return;
@@ -157,56 +156,48 @@ async function handleAddProduct(e) {
 
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = '⏳ Guardando...';
+        submitBtn.textContent = '⏳ Preparando imagen...';
     }
 
     try {
-        // ── PROCESAR IMAGEN CON COMPRESIÓN ──────────────────────
         let imageURL = null;
+
         if (imageInput && imageInput.files.length > 0) {
             const imageFile = imageInput.files[0];
-            
-            // Validar que sea imagen
+
             if (!isValidImageFile(imageFile)) {
-                alert('❌ Imagen no válida. Usa JPEG, PNG, WebP o GIF (máx 20MB)');
-                return;
+                throw new Error('Imagen no válida. Usa JPEG, PNG, WebP o GIF (máx 20MB).');
             }
 
-            // Mostrar progreso
-            showAdminToast('⏳ Comprimiendo y subiendo imagen...', 'info');
-            console.log('[Admin] Iniciando carga de imagen:', imageFile.name, imageFile.size, imageFile.type);
-            
-            // Generar ID único para la imagen
+            showAdminToast('⏳ Comprimiendo imagen...', 'info');
+            console.log('[Admin] Comprimiendo imagen:', imageFile.name, imageFile.size, imageFile.type);
+
+            const compressedBlob = await compressImageFile(imageFile, 1080, 0.8);
+            console.log('[Admin] Imagen comprimida:', compressedBlob.size, compressedBlob.type);
+
             const imageId = generateImageId();
-            
-            // Comprimir y subir con callback de progreso
-            imageURL = await compressAndUploadImage(
-                imageFile,
-                imageId,
-                (progress) => {
-                    console.log('[Admin] Progress callback:', progress);
-                    if (submitBtn) {
-                        if (progress <= 1) {
-                            submitBtn.textContent = '⏳ Subiendo...';
-                        } else {
-                            submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
-                        }
-                    }
+            showAdminToast('⏳ Subiendo imagen comprimida...', 'info');
+
+            imageURL = await uploadCompressedBlobToFirebase(imageId, compressedBlob, (progress) => {
+                if (!submitBtn) return;
+                if (progress <= 1) {
+                    submitBtn.textContent = '⏳ Subiendo...';
+                } else {
+                    submitBtn.textContent = `⏳ Subiendo ${Math.round(progress)}%...`;
                 }
-            );
-            
+            });
+
             console.log('[Admin] Imagen subida exitosamente:', imageURL);
             showAdminToast('✅ Imagen comprimida y subida exitosamente', 'success');
         }
 
-        // ── CREAR PRODUCTO ──────────────────────────────────────
         const product = {
             title,
             originalPrice,
             offerPrice,
             category,
             emoji,
-            image: imageURL // URL de Firebase Storage (o null)
+            image: imageURL
         };
 
         await addProduct(product);
@@ -222,6 +213,109 @@ async function handleAddProduct(e) {
             submitBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Crear Producto`;
         }
     }
+}
+
+async function compressImageFile(file, maxWidth = 1080, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        const cleanup = () => {
+            try { URL.revokeObjectURL(objectUrl); } catch (err) {
+                console.warn('[Admin] No se pudo revocar object URL:', err);
+            }
+            img.onload = null;
+            img.onerror = null;
+        };
+
+        img.onerror = () => {
+            cleanup();
+            reject(new Error('Error al cargar la imagen para compresión.')); 
+        };
+
+        img.onload = async () => {
+            try {
+                if (typeof img.decode === 'function') {
+                    await img.decode();
+                }
+
+                let width = img.naturalWidth || img.width;
+                let height = img.naturalHeight || img.height;
+
+                if (width > maxWidth) {
+                    const ratio = maxWidth / width;
+                    width = Math.round(maxWidth);
+                    height = Math.round(height * ratio);
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d', { alpha: false });
+                if (!ctx) {
+                    cleanup();
+                    reject(new Error('No se pudo obtener el contexto del canvas.'));
+                    return;
+                }
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    cleanup();
+                    if (!blob) {
+                        reject(new Error('Error al convertir la imagen comprimida al formato Blob.'));
+                        return;
+                    }
+                    resolve(blob);
+                }, 'image/jpeg', quality);
+            } catch (err) {
+                cleanup();
+                reject(err);
+            }
+        };
+
+        img.src = objectUrl;
+    });
+}
+
+function uploadCompressedBlobToFirebase(imageId, blob, onProgress) {
+    return new Promise((resolve, reject) => {
+        if (typeof firebase === 'undefined' || !firebase.storage) {
+            reject(new Error('Firebase Storage no está disponible.'));
+            return;
+        }
+
+        const storage = firebase.storage();
+        const ref = storage.ref(`images/${imageId}`);
+        const uploadTask = ref.put(blob, { contentType: 'image/jpeg' });
+
+        uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+                const totalBytes = snapshot.totalBytes || blob.size || 1;
+                const progress = totalBytes > 0
+                    ? (snapshot.bytesTransferred / totalBytes) * 100
+                    : 0;
+                if (typeof onProgress === 'function') {
+                    onProgress(progress);
+                }
+            },
+            (error) => {
+                reject(error);
+            },
+            async () => {
+                try {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                    resolve(downloadURL);
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        );
+    });
 }
 
 function resetForm() {
