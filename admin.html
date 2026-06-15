@@ -299,10 +299,13 @@
             background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 16px;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .users-table {
+            min-width: 900px;
             width: 100%;
             border-collapse: collapse;
         }
@@ -339,6 +342,27 @@
 
         .users-table-row:last-child .users-td {
             border-bottom: none;
+        }
+
+        .btn-delete-user {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.55rem 0.9rem;
+            background: transparent;
+            border: 1px solid rgba(248,113,113,0.35);
+            border-radius: 10px;
+            color: #f87171;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-delete-user:hover {
+            background: rgba(248,113,113,0.12);
+            border-color: rgba(248,113,113,0.55);
         }
 
         .user-avatar-fallback {
@@ -417,14 +441,10 @@
             .users-dashboard-section { padding: 0 1rem; }
             .admin-tabs { padding: 1rem 1rem 0; overflow-x: auto; flex-wrap: nowrap; }
             .admin-tab-btn { white-space: nowrap; flex-shrink: 0; }
-            .users-th:nth-child(4),
-            .users-td:nth-child(4) { display: none; }
         }
 
         @media (max-width: 480px) {
             .users-stats-row { grid-template-columns: 1fr; }
-            .users-th:nth-child(3),
-            .users-td:nth-child(3) { display: none; }
         }
     </style>
 </head>
@@ -696,6 +716,7 @@
                                 <th class="users-th">Teléfono</th>
                                 <th class="users-th">Dirección de Entrega</th>
                                 <th class="users-th">Fecha de Registro</th>
+                                <th class="users-th">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">

@@ -93,8 +93,31 @@ function renderUsersTable(users) {
             <td class="users-td">
                 <span style="font-size:0.78rem;color:rgba(240,253,244,0.5);white-space:nowrap;">${fechaStr}</span>
             </td>
+            <td class="users-td">
+                <button class="btn-delete-user" data-user-id="${user.id}" type="button">Eliminar</button>
+            </td>
         </tr>`;
     }).join('');
+
+    const deleteButtons = tbody.querySelectorAll('.btn-delete-user');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const userId = btn.dataset.userId;
+            if (!userId) return;
+            if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+            try {
+                await db.collection('usuarios').doc(userId).delete();
+                if (typeof showAdminToast === 'function') {
+                    showAdminToast('✅ Usuario eliminado correctamente', 'success');
+                }
+            } catch (error) {
+                console.error('[MetaOfertas] Error eliminando usuario:', error);
+                if (typeof showAdminToast === 'function') {
+                    showAdminToast('❌ Error al eliminar usuario', 'error');
+                }
+            }
+        });
+    });
 }
 
 // ── FILTRAR TABLA POR BÚSQUEDA ────────────────────────────────
