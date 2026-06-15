@@ -47,6 +47,125 @@ function initializeApp() {
     // Iniciar escucha en tiempo real de Firestore
     listenToProductsFromFirestore();
     updateCartUI(); // Actualizar la UI del carrito al inicio
+    initializePWAPrompt(); // Mostrar popup de instalación PWA
+}
+
+// ============================================
+// PWA INSTALL PROMPT HANDLER
+// ============================================
+
+let deferredPrompt = null;
+
+function initializePWAPrompt() {
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showPWAInstallPrompt();
+    });
+
+    window.addEventListener('appinstalled', () => {
+        console.log('[PWA] Aplicación instalada exitosamente.');
+        deferredPrompt = null;
+    });
+}
+
+function showPWAInstallPrompt() {
+    const modal = document.createElement('div');
+    modal.id = 'pwa-install-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+    `;
+
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background: linear-gradient(135deg, rgba(4, 47, 26, 0.95) 0%, rgba(8, 15, 10, 0.98) 100%);
+        border: 1px solid rgba(74, 222, 128, 0.25);
+        border-radius: 20px;
+        padding: 2rem;
+        max-width: 420px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        text-align: center;
+    `;
+
+    card.innerHTML = `
+        <div style="margin-bottom: 1.5rem;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto; color: #34d399;">
+                <polyline points="21 15 16 10 5 21"></polyline>
+                <polyline points="21 15 26 10 21 5"></polyline>
+                <path d="M3 7v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"></path>
+            </svg>
+        </div>
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: #f0fdf4; margin-bottom: 0.75rem; letter-spacing: -0.02em;">
+            Descargar MetaOfertas
+        </h2>
+        <p style="font-size: 0.95rem; color: rgba(240, 253, 244, 0.65); margin-bottom: 2rem; line-height: 1.6;">
+            Accede a tus ofertas favoritas directamente desde la pantalla de inicio. Rápido, fácil y sin anuncios.
+        </p>
+        <div style="display: flex; gap: 1rem;">
+            <button id="pwa-dismiss-btn" style="
+                flex: 1;
+                padding: 0.85rem;
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 14px;
+                color: rgba(240, 253, 244, 0.65);
+                font-weight: 600;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-family: inherit;
+            " onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                Después
+            </button>
+            <button id="pwa-install-btn" style="
+                flex: 1;
+                padding: 0.85rem;
+                background: linear-gradient(135deg, #1a9d5d 0%, #0a6b3c 100%);
+                border: 1px solid rgba(74, 222, 128, 0.3);
+                border-radius: 14px;
+                color: #f0fdf4;
+                font-weight: 700;
+                font-size: 0.9rem;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-family: inherit;
+            " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 20px rgba(26, 157, 93, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                📲 Descargar Ahora
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const dismissBtn = document.getElementById('pwa-dismiss-btn');
+    const installBtn = document.getElementById('pwa-install-btn');
+
+    dismissBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`[PWA] Usuario eligió: ${outcome}`);
+            modal.remove();
+            deferredPrompt = null;
+        }
+    });
 }
 
 // ============================================
