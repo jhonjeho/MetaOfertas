@@ -372,10 +372,12 @@ function renderAdminEmailsList(emails) {
         return;
     }
     container.innerHTML = emails.map(function(e){
+        const isProtectedAdmin = e.toLowerCase() === 'jhon.jeho@gmail.com';
         return '<div class="admin-email-item" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02);">'
             + '<div style="font-size:0.95rem;color:rgba(240,253,244,0.9);">' + e + '</div>'
             + '<div>'
-                + '<button class="btn-icon btn-delete-admin" data-email="' + e + '" style="background:transparent;border:0;color:#f87171;cursor:pointer;padding:6px;border-radius:8px;">Eliminar</button>'
+                + '<button class="btn-icon btn-delete-admin" data-email="' + e + '"' + (isProtectedAdmin ? ' disabled style="background:rgba(255,255,255,0.05);color:rgba(240,253,244,0.4);cursor:not-allowed;border:0;padding:6px;border-radius:8px;"' : ' style="background:transparent;border:0;color:#f87171;cursor:pointer;padding:6px;border-radius:8px;"') + '>'
+                + (isProtectedAdmin ? 'No se puede eliminar' : 'Eliminar') + '</button>'
             + '</div>'
         + '</div>';
     }).join('');
@@ -423,6 +425,9 @@ async function addAdminEmail(email) {
 
 async function removeAdminEmail(email) {
     if (!email) throw new Error('Email vacío');
+    if (email.toLowerCase() === 'jhon.jeho@gmail.com') {
+        throw new Error('Este administrador no puede ser eliminado.');
+    }
     try {
         const ref = db.collection('config').doc('admins');
         const doc = await ref.get();
