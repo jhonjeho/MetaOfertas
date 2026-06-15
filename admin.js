@@ -128,6 +128,24 @@ function setupAdminEventListeners() {
     // Búsqueda
     const searchProducts = document.getElementById('searchProducts');
     if (searchProducts) searchProducts.addEventListener('input', handleSearch);
+
+    // Formulario de gestión de administradores (agregar / eliminar correos)
+    const adminEmailsForm = document.getElementById('adminEmailsForm');
+    if (adminEmailsForm) adminEmailsForm.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const input = document.getElementById('newAdminEmail');
+        if (!input) return;
+        const email = input.value.trim().toLowerCase();
+        if (!email) return;
+        try {
+            await addAdminEmail(email);
+            input.value = '';
+            showAdminToast('✅ Administrador agregado', 'success');
+        } catch (err) {
+            console.error('[Admin] Error agregando admin:', err);
+            showAdminToast('❌ Error al agregar admin', 'error');
+        }
+    });
 }
 
 // ============================================
@@ -314,6 +332,106 @@ function previewImage(e) {
     } else {
         preview.innerHTML = `
             <div class="image-preview-placeholder">
+
+// ============================================
+// GESTIÓN DE CORREOS DE ADMIN (Firestore)
+// Guarda la lista en: collection 'config' doc 'admins' { emails: [...] }
+// ============================================
+
+async function loadAdminEmails() {
+    try {
+        if (typeof db === 'undefined') return [];
+        const doc = await db.collection('config').doc('admins').get();
+        if (doc.exists && doc.data() && Array.isArray(doc.data().emails)) {
+            const emails = doc.data().emails.map(e => String(e).toLowerCase());
+            // actualizar variable global si existe
+            try { ADMIN_EMAILS = emails; } catch (e) { /* ignore if const */ }
+            renderAdminEmailsList(emails);
+            return emails;
+        }
+        renderAdminEmailsList(ADMIN_EMAILS || []);
+        return ADMIN_EMAILS || [];
+    } catch (err) {
+        console.error('[Admin] Error cargando admin emails:', err);
+        renderAdminEmailsList(ADMIN_EMAILS || []);
+        return ADMIN_EMAILS || [];
+    }
+}
+
+function renderAdminEmailsList(emails) {
+    const container = document.getElementById('adminEmailsList');
+    if (!container) return;
+    if (!emails || emails.length === 0) {
+        container.innerHTML = '<div style="color:rgba(240,253,244,0.5);">No hay administradores configurados.</div>';
+        return;
+    }
+    container.innerHTML = emails.map(function(e){
+        return '<div class="admin-email-item" style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:8px;margin-bottom:6px;background:rgba(255,255,255,0.02);">'
+            + '<div style="font-size:0.95rem;color:rgba(240,253,244,0.9);">' + e + '</div>'
+            + '<div>'
+                + '<button class="btn-icon btn-delete-admin" data-email="' + e + '" style="background:transparent;border:0;color:#f87171;cursor:pointer;padding:6px;border-radius:8px;">Eliminar</button>'
+            + '</div>'
+        + '</div>';
+    }).join('');
+
+    // attach delete handlers
+    container.querySelectorAll('.btn-delete-admin').forEach(btn => {
+        btn.addEventListener('click', async (ev) => {
+            const email = btn.getAttribute('data-email');
+            if (!email) return;
+            if (!confirm('Eliminar administrador ' + email + '?')) return;
+            try {
+                await removeAdminEmail(email);
+                showAdminToast('✅ Administrador eliminado', 'success');
+            } catch (err) {
+                console.error('[Admin] Error eliminando admin:', err);
+                showAdminToast('❌ Error al eliminar admin', 'error');
+            }
+        });
+    });
+}
+
+async function addAdminEmail(email) {
+    if (!email) throw new Error('Email vacío');
+    try {
+        const ref = db.collection('config').doc('admins');
+        const doc = await ref.get();
+        let emails = [];
+        if (doc.exists && Array.isArray(doc.data().emails)) {
+            emails = doc.data().emails.map(e => String(e).toLowerCase());
+        }
+        if (emails.includes(email.toLowerCase())) {
+            throw new Error('El correo ya es administrador');
+        }
+        emails.push(email.toLowerCase());
+        await ref.set({ emails }, { merge: true });
+        // actualizar memoria local
+        try { ADMIN_EMAILS = emails; } catch (e) {}
+        renderAdminEmailsList(emails);
+        return emails;
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function removeAdminEmail(email) {
+    if (!email) throw new Error('Email vacío');
+    try {
+        const ref = db.collection('config').doc('admins');
+        const doc = await ref.get();
+        let emails = [];
+        if (doc.exists && Array.isArray(doc.data().emails)) {
+            emails = doc.data().emails.map(e => String(e).toLowerCase());
+        }
+        const filtered = emails.filter(e => e !== email.toLowerCase());
+        await ref.set({ emails: filtered }, { merge: true });
+        try { ADMIN_EMAILS = filtered; } catch (e) {}
+        renderAdminEmailsList(filtered);
+        return filtered;
+    } catch (err) {
+        throw err;
+    }
+}
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <p>Previsualización de imagen</p>
             </div>`;
