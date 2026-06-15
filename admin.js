@@ -143,7 +143,8 @@ function setupAdminEventListeners() {
             showAdminToast('✅ Administrador agregado', 'success');
         } catch (err) {
             console.error('[Admin] Error agregando admin:', err);
-            showAdminToast('❌ Error al agregar admin', 'error');
+            const msg = (err && err.message) ? err.message : String(err);
+            showAdminToast('❌ Error al agregar admin: ' + msg, 'error');
         }
     });
 }
@@ -385,7 +386,8 @@ function renderAdminEmailsList(emails) {
                 showAdminToast('✅ Administrador eliminado', 'success');
             } catch (err) {
                 console.error('[Admin] Error eliminando admin:', err);
-                showAdminToast('❌ Error al eliminar admin', 'error');
+                const msg = (err && err.message) ? err.message : String(err);
+                showAdminToast('❌ Error al eliminar admin: ' + msg, 'error');
             }
         });
     });
