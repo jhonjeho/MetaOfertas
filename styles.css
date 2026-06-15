@@ -1946,3 +1946,29 @@ body {
         height: 1px;
     }
 }
+
+/* ── LOGOS KIT METAOFERTAS ────────────────────────────────── */
+
+/* Evitar que los logos se encojan en contenedores flex */
+img[src*="assets/logos"] {
+    flex-shrink: 0;
+}
+
+/* Navbar: logo alineado verticalmente */
+.logo img[src*="assets/logos"] {
+    height: 36px;
+    width: auto;
+}
+
+/* Footer: logo centrado */
+.footer-logo img[src*="assets/logos"] {
+    display: block;
+    margin: 0 auto 10px;
+}
+
+/* Mobile: hero banner máximo 240px */
+@media (max-width: 768px) {
+    .landing-content img[src*="g-banner-hero"] {
+        max-width: 240px !important;
+    }
+}

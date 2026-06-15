@@ -356,6 +356,9 @@ function renderProducts() {
             <div class="product-image">
                 ${imageContent}
                 <span class="discount-badge">${discount}% OFF</span>
+                <img src="assets/logos/o-percent-dark.svg" alt="%" loading="lazy"
+                     style="position:absolute; top:8px; right:8px; width:36px; height:36px;
+                            border-radius:50%; object-fit:contain; z-index:3;">
             </div>
             <div class="product-info">
                 <p class="product-category">${getCategoryLabel(product.category)}</p>
