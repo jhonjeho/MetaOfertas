@@ -344,23 +344,32 @@ function previewImage(e) {
 // Guarda la lista en: collection 'config' doc 'admins' { emails: [...] }
 // ============================================
 
+const PROTECTED_ADMIN_EMAIL = 'jhon.jeho@gmail.com';
+
 async function loadAdminEmails() {
     try {
         if (typeof db === 'undefined') return [];
-        const doc = await db.collection('config').doc('admins').get();
+        const ref = db.collection('config').doc('admins');
+        const doc = await ref.get();
+        let emails = [];
         if (doc.exists && doc.data() && Array.isArray(doc.data().emails)) {
-            const emails = doc.data().emails.map(e => String(e).toLowerCase());
-            // actualizar variable global si existe
-            try { ADMIN_EMAILS = emails; } catch (e) { /* ignore if const */ }
-            renderAdminEmailsList(emails);
-            return emails;
+            emails = doc.data().emails.map(e => String(e).toLowerCase());
         }
-        renderAdminEmailsList(ADMIN_EMAILS || []);
-        return ADMIN_EMAILS || [];
+
+        if (!emails.includes(PROTECTED_ADMIN_EMAIL)) {
+            emails.unshift(PROTECTED_ADMIN_EMAIL);
+            await ref.set({ emails }, { merge: true });
+            console.log('[Admin] Agregado admin protegido automáticamente a Firestore:', PROTECTED_ADMIN_EMAIL);
+        }
+
+        // actualizar variable global si existe
+        try { ADMIN_EMAILS = emails; } catch (e) { /* ignore if const */ }
+        renderAdminEmailsList(emails);
+        return emails;
     } catch (err) {
         console.error('[Admin] Error cargando admin emails:', err);
-        renderAdminEmailsList(ADMIN_EMAILS || []);
-        return ADMIN_EMAILS || [];
+        renderAdminEmailsList(ADMIN_EMAILS || [PROTECTED_ADMIN_EMAIL]);
+        return ADMIN_EMAILS || [PROTECTED_ADMIN_EMAIL];
     }
 }
 
@@ -436,6 +445,9 @@ async function removeAdminEmail(email) {
             emails = doc.data().emails.map(e => String(e).toLowerCase());
         }
         const filtered = emails.filter(e => e !== email.toLowerCase());
+        if (filtered.includes(PROTECTED_ADMIN_EMAIL) || email.toLowerCase() === PROTECTED_ADMIN_EMAIL) {
+            throw new Error('Este administrador no puede ser eliminado.');
+        }
         await ref.set({ emails: filtered }, { merge: true });
         try { ADMIN_EMAILS = filtered; } catch (e) {}
         renderAdminEmailsList(filtered);
