@@ -1,0 +1,8 @@
+<svg id="g5" width="255" height="80" viewBox="0 0 255 80" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="38" cy="40" r="30" fill="none" stroke="#22C55E" stroke-width="3"/>
+        <circle cx="61" cy="14" r="8" fill="#F5C518"/>
+        <text x="38" y="48" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#22C55E" text-anchor="middle">%</text>
+        <text x="80" y="37" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#fff" letter-spacing="-.5">Meta</text>
+        <text x="80" y="59" font-family="Arial Black,sans-serif" font-weight="900" font-size="22" fill="#22C55E" letter-spacing="-.5">Ofertas</text>
+        <text x="80" y="72" font-family="Arial,sans-serif" font-size="7" fill="#4d8060" letter-spacing="3">AHORRA MÁS CADA DÍA</text>
+      </svg>

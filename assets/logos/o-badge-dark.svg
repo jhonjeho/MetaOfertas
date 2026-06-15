@@ -1,0 +1,7 @@
+<svg id="o3" width="270" height="88" viewBox="0 0 270 88" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="og3" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#FF4D00"/><stop offset="100%" stop-color="#FF8A00"/></linearGradient></defs>
+        <path d="M22 16 H248 Q258 16 258 26 L258 54 Q258 62 248 62 H22 L8 38 Z" fill="url(#og3)"/>
+        <circle cx="20" cy="38" r="5" fill="#0d0d0d" opacity=".5"/>
+        <text x="138" y="46" font-family="Arial Black,sans-serif" font-weight="900" font-size="23" fill="#fff" text-anchor="middle" letter-spacing="-1">Meta<tspan fill="#FFB800">Ofertas</tspan></text>
+        <text x="138" y="76" font-family="Arial,sans-serif" font-size="7.5" fill="#FF4D00" text-anchor="middle" letter-spacing="4">DEALS · DESCUENTOS · PROMOS</text>
+      </svg>

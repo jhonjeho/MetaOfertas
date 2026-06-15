@@ -1,0 +1,12 @@
+<svg id="o7" width="240" height="76" viewBox="0 0 240 76" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="og7" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF4D00"/><stop offset="100%" stop-color="#FF8A00"/></linearGradient></defs>
+        <rect x="2" y="2" width="68" height="68" rx="16" fill="url(#og7)"/>
+        <path d="M36 14 L26 36 H33 L28 58 L46 33 H39 Z" fill="#fff"/>
+        <circle cx="58" cy="14" r="9" fill="#FFB800"/><text x="58" y="17.5" font-family="Arial Black,sans-serif" font-weight="900" font-size="8" fill="#000" text-anchor="middle">%</text>
+        <rect x="84" y="2" width="68" height="68" rx="16" fill="#0d0d0d" stroke="#FF4D00" stroke-width="2"/>
+        <path d="M118 14 L108 36 H115 L110 58 L128 33 H121 Z" fill="#FF4D00"/>
+        <circle cx="140" cy="14" r="9" fill="#FFB800"/><text x="140" y="17.5" font-family="Arial Black,sans-serif" font-weight="900" font-size="8" fill="#000" text-anchor="middle">%</text>
+        <rect x="166" y="2" width="68" height="68" rx="16" fill="#fff"/>
+        <path d="M200 14 L190 36 H197 L192 58 L210 33 H203 Z" fill="#FF4D00"/>
+        <circle cx="222" cy="14" r="9" fill="#FFB800"/><text x="222" y="17.5" font-family="Arial Black,sans-serif" font-weight="900" font-size="8" fill="#000" text-anchor="middle">%</text>
+      </svg>

@@ -1,0 +1,8 @@
+<svg id="o9" width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs><radialGradient id="og9g" cx="70%" cy="30%"><stop offset="0%" stop-color="#FF4D00" stop-opacity=".3"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
+        <rect x="2" y="2" width="96" height="96" rx="22" fill="#1a0800"/>
+        <rect x="2" y="2" width="96" height="96" rx="22" fill="url(#og9g)"/>
+        <rect x="2" y="2" width="96" height="96" rx="22" fill="none" stroke="#FF4D00" stroke-width="1.5"/>
+        <text x="50" y="62" font-family="Arial Black,sans-serif" font-weight="900" font-size="42" fill="#fff" text-anchor="middle" letter-spacing="-3">M<tspan fill="#FF4D00">O</tspan></text>
+        <text x="50" y="78" font-family="Arial,sans-serif" font-size="7" fill="#884400" text-anchor="middle" letter-spacing="2.5">METAOFERTAS</text>
+      </svg>

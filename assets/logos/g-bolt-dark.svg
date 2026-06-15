@@ -1,0 +1,7 @@
+<svg id="g1" width="270" height="80" viewBox="0 0 270 80" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="gg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#22C55E"/><stop offset="100%" stop-color="#16A34A"/></linearGradient></defs>
+        <rect x="4" y="16" width="48" height="48" rx="12" fill="url(#gg1)"/>
+        <path d="M28 24 L20 42 H27 L22 56 L36 38 H29 Z" fill="#fff"/>
+        <text x="64" y="45" font-family="Arial Black,sans-serif" font-weight="900" font-size="28" fill="#fff" letter-spacing="-1">Meta<tspan fill="#22C55E">Ofertas</tspan></text>
+        <text x="64" y="62" font-family="Arial,sans-serif" font-size="8.5" fill="#4d8060" letter-spacing="3">AHORRA CADA DÍA</text>
+      </svg>
