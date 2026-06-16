@@ -1,16 +1,8 @@
 import express from 'express';
 import { allQuery, getQuery } from '../database.js';
+import { generateAdminToken, requireAdminJwt } from '../middlewares/auth.js';
 
 const router = express.Router();
-
-// Middleware de autenticación
-const requireAdminAuth = (req, res, next) => {
-    const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword !== process.env.ADMIN_PASSWORD) {
-        return res.status(401).json({ error: 'No autorizado. Credenciales incorrectas.' });
-    }
-    next();
-};
 
 // POST - Verificar credenciales admin
 router.post('/login', (req, res) => {
@@ -18,11 +10,8 @@ router.post('/login', (req, res) => {
         const { password } = req.body;
 
         if (password === process.env.ADMIN_PASSWORD) {
-            res.json({
-                success: true,
-                message: 'Autenticación exitosa',
-                token: Buffer.from(`admin:${password}`).toString('base64')
-            });
+            const token = generateAdminToken();
+            res.json({ success: true, message: 'Autenticación exitosa', token });
         } else {
             res.status(401).json({ error: 'Contraseña incorrecta' });
         }
@@ -32,7 +21,7 @@ router.post('/login', (req, res) => {
 });
 
 // GET - Dashboard del administrador
-router.get('/dashboard', requireAdminAuth, async (req, res) => {
+router.get('/dashboard', requireAdminJwt, async (req, res) => {
     try {
         const totalProducts = await getQuery('SELECT COUNT(*) as count FROM products');
         const totalOrders = await getQuery('SELECT COUNT(*) as count FROM orders');
@@ -53,7 +42,7 @@ router.get('/dashboard', requireAdminAuth, async (req, res) => {
 });
 
 // GET - Obtener resumen de ventas
-router.get('/sales', requireAdminAuth, async (req, res) => {
+router.get('/sales', requireAdminJwt, async (req, res) => {
     try {
         const sales = await allQuery(`
             SELECT 
@@ -74,7 +63,7 @@ router.get('/sales', requireAdminAuth, async (req, res) => {
 });
 
 // GET - Productos más vendidos
-router.get('/top-products', requireAdminAuth, async (req, res) => {
+router.get('/top-products', requireAdminJwt, async (req, res) => {
     try {
         const topProducts = await allQuery(`
             SELECT 

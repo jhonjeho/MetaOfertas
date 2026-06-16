@@ -43,7 +43,6 @@ function displayProductsList(products) {
 
     container.style.display = 'flex';
     emptyMessage.style.display = 'none';
-
     container.innerHTML = products.map(product => `
         <div class="admin-product-item">
             <div class="admin-product-image">
@@ -56,9 +55,12 @@ function displayProductsList(products) {
                     <span class="admin-product-offer">${formatPrice(product.offerPrice)}</span>
                     <span class="admin-product-discount">${calculateDiscount(product.originalPrice, product.offerPrice)}% OFF</span>
                 </div>
+                <div class="admin-product-stock">Stock: <strong>${typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0)}</strong></div>
             </div>
             <div class="admin-product-actions">
+                <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', -1)" title="Restar stock">➖</button>
                 <button class="btn-icon btn-edit" onclick="openEditModal('${product.id}')" title="Editar">✏️</button>
+                <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', 1)" title="Sumar stock">➕</button>
                 <button class="btn-icon btn-delete" onclick="deleteProductConfirm('${product.id}')" title="Eliminar">🗑️</button>
             </div>
         </div>
@@ -147,6 +149,88 @@ function setupAdminEventListeners() {
             showAdminToast('❌ Error al agregar admin: ' + msg, 'error');
         }
     });
+
+    // Importación CSV de inventario
+    const inventoryCsvFile = document.getElementById('inventoryCsvFile');
+    const btnUploadInventoryCsv = document.getElementById('btnUploadInventoryCsv');
+    if (btnUploadInventoryCsv) btnUploadInventoryCsv.addEventListener('click', handleInventoryCsvUpload);
+
+}
+
+async function handleInventoryCsvUpload(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('inventoryCsvFile');
+    const statusEl = document.getElementById('inventoryCsvStatus');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showAdminToast('Selecciona un archivo CSV primero', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    const items = [];
+
+    for (const line of lines) {
+        // soportar id,quantity o title,quantity
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length < 2) continue;
+        const a = parts[0];
+        const b = parts[1];
+        if (/^\d+$/.test(a)) {
+            items.push({ id: Number(a), quantity: Number(b) });
+        } else {
+            // buscar por title localmente
+            const prods = getAllProducts().filter(p => String(p.title).toLowerCase() === String(a).toLowerCase());
+            if (prods.length > 0) {
+                items.push({ id: prods[0].id, quantity: Number(b) });
+            } else {
+                // intentar match parcial
+                const partial = getAllProducts().find(p => String(p.title).toLowerCase().includes(String(a).toLowerCase()));
+                if (partial) items.push({ id: partial.id, quantity: Number(b) });
+            }
+        }
+    }
+
+    if (items.length === 0) {
+        showAdminToast('No se encontraron filas válidas en el CSV', 'error');
+        return;
+    }
+
+    // Solicitar token JWT al backend usando la contraseña
+    const adminPassword = prompt('Ingresa la contraseña de admin para solicitar token:');
+    if (!adminPassword) {
+        showAdminToast('Operación cancelada', 'info');
+        return;
+    }
+
+    statusEl.textContent = 'Obteniendo token...';
+    try {
+        const loginRes = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: adminPassword })
+        });
+        const loginData = await loginRes.json();
+        if (!loginRes.ok) throw new Error(loginData && loginData.error ? loginData.error : 'Autenticación fallida');
+        const token = loginData.token;
+
+        statusEl.textContent = 'Enviando cambios...';
+        const res = await fetch('/api/products/inventory/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ items })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data && data.error ? data.error : 'Error desconocido');
+        statusEl.textContent = `Importados: ${data.updated}`;
+        showAdminToast('✅ Inventario importado correctamente', 'success');
+        if (typeof loadAndDisplayProducts === 'function') loadAndDisplayProducts();
+    } catch (err) {
+        console.error('Error importando CSV:', err);
+        statusEl.textContent = 'Error: ' + err.message;
+        showAdminToast('❌ Error al importar inventario: ' + err.message, 'error');
+    }
 }
 
 // ============================================
@@ -216,7 +300,8 @@ async function handleAddProduct(e) {
             offerPrice,
             category,
             emoji,
-            image: imageDataURL
+            image: imageDataURL,
+            quantity: parseInt(document.getElementById('productStock')?.value || 0, 10)
         };
 
         await addProduct(product);
@@ -507,6 +592,8 @@ function openEditModal(productId) {
     document.getElementById('editProductOriginal').value = product.originalPrice;
     document.getElementById('editProductOffer').value = product.offerPrice;
     document.getElementById('editProductEmoji').value = product.emoji || '📦';
+    const editStock = document.getElementById('editProductStock');
+    if (editStock) editStock.value = typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0);
 
     const editImagePreview = document.getElementById('editImagePreview');
     if (editImagePreview) {
@@ -595,6 +682,9 @@ async function handleEditProduct(e) {
             emoji,
             image: imageDataURL
         };
+
+        const editStockVal = parseInt(document.getElementById('editProductStock')?.value || 0, 10);
+        updatedData.quantity = editStockVal;
 
         await updateProduct(productId, updatedData);
         closeEditModal();
@@ -703,6 +793,22 @@ function isValidImageFile(file) {
 }
 
 // ── Toast de confirmación para el admin ──────────────────────
+// Ajustar stock rápido desde el panel (incrementar / decrementar)
+async function changeProductStock(productId, delta) {
+    const product = getAllProducts().find(p => p.id === productId);
+    if (!product) return;
+    const current = typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0);
+    const newQty = Math.max(0, current + delta);
+    try {
+        await updateProduct(productId, { quantity: newQty });
+        showAdminToast('✅ Stock actualizado', 'success');
+        if (typeof loadAndDisplayProducts === 'function') loadAndDisplayProducts();
+    } catch (err) {
+        console.error('[Admin] Error actualizando stock:', err);
+        showAdminToast('❌ Error al actualizar stock', 'error');
+    }
+}
+
 function showAdminToast(message, type = 'success') {
     // Usar la función de firebase-auth.js si está disponible
     if (typeof window.showAdminToast === 'function' && window.showAdminToast !== showAdminToast) {

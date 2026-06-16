@@ -139,3 +139,59 @@ Para acceder:
 **Versión:** 1.0 - Fase inicial (Frontend + LocalStorage)
 **Fecha:** Mayo 2026
 **Empresa:** MetaOfertas
+
+## 📦 Sistema de Inventario (Panel Admin)
+
+Se ha añadido soporte básico de inventario para los productos. Cambios relevantes:
+
+- Se agrega el campo `Stock (unidades)` en el formulario de creación y edición de productos en el panel administrador (`admin.html`).
+- Campo HTML: `productStock` y `editProductStock`.
+- El campo se guarda como `quantity` en los documentos de la colección `productos` en Firestore (o en LocalStorage como fallback).
+- En la tienda pública, los productos con `quantity` igual a `0` se muestran como "Agotado" y no pueden añadirse al carrito.
+
+Uso desde el Panel Admin:
+
+1. Abre `admin.html` y autentícate como administrador.
+2. Al crear o editar un producto, completa el campo "Stock (unidades)".
+3. Puedes ajustar el stock rápidamente desde la lista de productos usando los botones ➕/➖.
+
+Reglas y seguridad recomendadas (Firestore):
+
+- Incluye el archivo `firestore.rules` en tu despliegue de Firebase para validar `quantity >= 0` y restringir escrituras a administradores con el claim `admin=true`.
+- Para asignar el claim `admin` a un usuario, usa la consola de Firebase Admin SDK en tu servidor backend.
+
+Ejemplo de despliegue de reglas:
+
+1. Guarda `firestore.rules` en el directorio del proyecto.
+2. Ejecuta:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Pruebas básicas incluidas:
+
+- `tests/inventory.test.js` comprueba que los campos `productStock` y `editProductStock` existen y que `admin.js` contiene la función `changeProductStock`.
+- Ejecuta las pruebas con:
+
+Si quieres, puedo añadir endpoints REST para gestionar inventario desde el backend, o proteger `quantity` con validaciones adicionales en el servidor. Dime qué prefieres.
+
+### Importar inventario por CSV
+
+El panel admin ahora soporta importar stock masivo desde un CSV. Formato esperado:
+
+- `id,quantity` (ej: `12,30`) — usa `id` de la tabla `products` en SQLite
+- o `title,quantity` (ej: `Manzana Roja Seleccionada (1kg),25`) — intentará buscar por título
+
+Pasos rápidos:
+
+1. Abre `admin.html` → pestaña `Productos` → sección "Importar stock (CSV)".
+2. Selecciona el archivo CSV y pulsa "Subir CSV".
+3. Ingresa la contraseña admin cuando se solicite para aplicar los cambios.
+
+El proceso actualizará `quantity` de los productos y mostrará un resumen al finalizar.
+```bash
+npm run test:inventory
+```
+
+Si quieres, puedo añadir endpoints REST para gestionar inventario desde el backend, o proteger `quantity` con validaciones adicionales en el servidor. Dime qué prefieres.

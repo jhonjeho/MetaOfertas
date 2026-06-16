@@ -46,11 +46,28 @@ export function initializeDatabase() {
                     category TEXT NOT NULL,
                     emoji TEXT,
                     image LONGBLOB,
+                    quantity INTEGER DEFAULT 0,
                     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `, (err) => {
                 if (err) reject(err);
+            });
+
+            // Asegurar que la columna 'quantity' exista en bases de datos antiguas
+            db.all(`PRAGMA table_info(products)`, (err, cols) => {
+                if (err) console.error('Error leyendo esquema de products:', err);
+                try {
+                    const hasQuantity = Array.isArray(cols) && cols.some(c => c.name === 'quantity');
+                    if (!hasQuantity) {
+                        db.run(`ALTER TABLE products ADD COLUMN quantity INTEGER DEFAULT 0`, (err) => {
+                            if (err) console.error('Error agregando columna quantity:', err);
+                            else console.log('✅ Columna quantity agregada a products');
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error verificando columna quantity:', e);
+                }
             });
 
             // Tabla de carrito

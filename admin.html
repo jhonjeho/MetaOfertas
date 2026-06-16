@@ -601,6 +601,11 @@
                             <input type="number" id="productOffer" placeholder="99.99" class="form-input" step="0.01" min="0" required>
                         </div>
 
+                        <div class="form-group">
+                            <label for="productStock">Stock (unidades) <span class="required-mark">*</span></label>
+                            <input type="number" id="productStock" class="form-input" min="0" value="0" required>
+                        </div>
+
                         <div class="discount-info" id="discountInfo"></div>
 
                         <button type="submit" class="btn-add-product">
@@ -627,6 +632,16 @@
                     </div>
 
                     <div id="adminProductsList" class="admin-products-list"></div>
+
+                    <div style="margin-top:1rem; padding:12px; border-radius:8px; background:rgba(255,255,255,0.02);">
+                        <h3 style="margin:0 0 8px 0;color:#e6ffed;font-size:0.95rem;">Importar stock (CSV)</h3>
+                        <p style="margin:0 0 8px 0;color:rgba(240,253,244,0.5);font-size:0.85rem;">CSV con columnas: <strong>id,quantity</strong> (sin encabezado) o <strong>title,quantity</strong>.</p>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input type="file" id="inventoryCsvFile" accept="text/csv" style="flex:1;" />
+                            <button id="btnUploadInventoryCsv" class="btn-add-product" style="min-width:140px;">Subir CSV</button>
+                        </div>
+                        <div id="inventoryCsvStatus" style="margin-top:8px;color:rgba(240,253,244,0.6);font-size:0.85rem;"></div>
+                    </div>
 
                     <div id="emptyProductsMessage" class="empty-message" style="display: none;">
                         <div class="empty-icon-wrap">
@@ -818,6 +833,11 @@
                     <div class="form-group">
                         <label for="editProductOffer">Precio de Oferta ($) <span class="required-mark">*</span></label>
                         <input type="number" id="editProductOffer" class="form-input" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editProductStock">Stock (unidades) <span class="required-mark">*</span></label>
+                        <input type="number" id="editProductStock" class="form-input" min="0" value="0" required>
                     </div>
 
                     <div class="discount-info" id="editDiscountInfo"></div>

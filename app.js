@@ -268,6 +268,7 @@ async function loadDemoProductsToFirestore() {
             category: 'vegetables',
             emoji: '🍎',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         },
         {
@@ -277,6 +278,7 @@ async function loadDemoProductsToFirestore() {
             category: 'meats',
             emoji: '🍗',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         },
         {
@@ -286,6 +288,7 @@ async function loadDemoProductsToFirestore() {
             category: 'dairy',
             emoji: '🥛',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         },
         {
@@ -295,6 +298,7 @@ async function loadDemoProductsToFirestore() {
             category: 'pantry',
             emoji: '🍞',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         },
         {
@@ -304,6 +308,7 @@ async function loadDemoProductsToFirestore() {
             category: 'vegetables',
             emoji: '🥕',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         },
         {
@@ -313,6 +318,7 @@ async function loadDemoProductsToFirestore() {
             category: 'dairy',
             emoji: '🧀',
             image: null,
+            quantity: 10,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         }
     ];
@@ -389,7 +395,8 @@ function loadDemoProducts() {
                 offerPrice: 9500,
                 category: 'vegetables',
                 emoji: '🍎',
-                image: null
+                image: null,
+                quantity: 10
             },
             {
                 id: 'demo-2',
@@ -398,7 +405,8 @@ function loadDemoProducts() {
                 offerPrice: 25500,
                 category: 'meats',
                 emoji: '🍗',
-                image: null
+                image: null,
+                quantity: 10
             },
             {
                 id: 'demo-3',
@@ -407,7 +415,8 @@ function loadDemoProducts() {
                 offerPrice: 3500,
                 category: 'dairy',
                 emoji: '🥛',
-                image: null
+                image: null,
+                quantity: 10
             },
             {
                 id: 'demo-4',
@@ -416,7 +425,8 @@ function loadDemoProducts() {
                 offerPrice: 5500,
                 category: 'pantry',
                 emoji: '🍞',
-                image: null
+                image: null,
+                quantity: 10
             },
             {
                 id: 'demo-5',
@@ -425,7 +435,8 @@ function loadDemoProducts() {
                 offerPrice: 6500,
                 category: 'vegetables',
                 emoji: '🥕',
-                image: null
+                image: null,
+                quantity: 10
             },
             {
                 id: 'demo-6',
@@ -434,7 +445,8 @@ function loadDemoProducts() {
                 offerPrice: 16800,
                 category: 'dairy',
                 emoji: '🧀',
-                image: null
+                image: null,
+                quantity: 10
             }
         ];
 
@@ -492,7 +504,7 @@ function renderProducts() {
                     <span class="offer-price">${formatPrice(product.offerPrice)}</span>
                 </div>
                 <p class="savings">✦ Ahorras ${savings}</p>
-                <button class="btn-add-cart" onclick='addToCart(${safeId})'>¡Lo Quiero!</button>
+                ${ (product.quantity && product.quantity > 0) ? `<button class="btn-add-cart" onclick='addToCart(${safeId})'>¡Lo Quiero!</button>` : `<button class="btn-add-cart" disabled style="opacity:0.6;cursor:not-allowed;">Agotado</button>` }
             </div>
         </div>`;
     }).join('');
@@ -521,8 +533,17 @@ function addToCart(productId) {
     // ── Los visitantes pueden agregar al carrito libremente sin login ──
     const product = allProducts.find(p => p.id === productId);
     if (product) {
+        const available = typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0);
+        if (available <= 0) {
+            showToastNotification(`❌ ${product.title} está agotado`);
+            return;
+        }
         const existingCartItem = cart.find(item => item.id === productId);
         if (existingCartItem) {
+            if (existingCartItem.quantity + 1 > available) {
+                showToastNotification(`❌ No hay suficiente stock de ${product.title}`);
+                return;
+            }
             existingCartItem.quantity++;
         } else {
             cart.push({ ...product, quantity: 1 });
