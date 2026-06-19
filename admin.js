@@ -5,6 +5,7 @@
    ============================================ */
 
 let currentEditingProductId = null; // Ahora es un string (ID de Firestore)
+let currentProductView = localStorage.getItem('adminProductView') || 'grid';
 
 // ============================================
 // INICIALIZACIÓN
@@ -16,6 +17,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeAdmin() {
     setupAdminEventListeners();
+    
+    // Configurar clase activa del switch de visualización según localStorage
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnList = document.getElementById('btnViewList');
+    if (btnGrid && btnList) {
+        if (currentProductView === 'list') {
+            btnList.classList.add('active');
+            btnGrid.classList.remove('active');
+        } else {
+            btnGrid.classList.add('active');
+            btnList.classList.remove('active');
+        }
+    }
+    
     // Los productos se cargan automáticamente desde el listener de Firestore en app.js
     // loadAndDisplayProducts() se llama desde el onSnapshot de listenToProductsFromFirestore()
 }
@@ -43,28 +58,133 @@ function displayProductsList(products) {
 
     container.style.display = 'flex';
     emptyMessage.style.display = 'none';
-    container.innerHTML = products.map(product => `
-        <div class="admin-product-item">
-            <div class="admin-product-image">
-                ${product.image ? `<img src="${product.image}" alt="${product.title}">` : product.emoji}
-            </div>
-            <div class="admin-product-info">
-                <div class="admin-product-title">${product.title}</div>
-                <div class="admin-product-prices">
-                    <span class="admin-product-original">${formatPrice(product.originalPrice)}</span>
-                    <span class="admin-product-offer">${formatPrice(product.offerPrice)}</span>
-                    <span class="admin-product-discount">${calculateDiscount(product.originalPrice, product.offerPrice)}% OFF</span>
+
+    if (currentProductView === 'list') {
+        container.style.flexDirection = 'column';
+        container.innerHTML = products.map(product => {
+            const originalPriceStr = formatPrice(product.originalPrice);
+            const offerPriceStr = formatPrice(product.offerPrice);
+            const discountStr = calculateDiscount(product.originalPrice, product.offerPrice);
+            const stockVal = typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0);
+            
+            return `
+            <div class="admin-product-row" data-product-id="${product.id}">
+                <div class="admin-product-row-header" onclick="toggleProductRowExpansion('${product.id}')">
+                    <span class="admin-product-row-emoji">${product.emoji || '📦'}</span>
+                    <span class="admin-product-row-title">${product.title}</span>
+                    <span class="admin-product-row-category">${getCategoryLabel(product.category)}</span>
+                    <div class="admin-product-row-prices">
+                        <span class="admin-product-row-original">${originalPriceStr}</span>
+                        <span class="admin-product-row-offer">${offerPriceStr}</span>
+                    </div>
+                    <span class="admin-product-row-arrow">▼</span>
                 </div>
-                <div class="admin-product-stock">Stock: <strong>${typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0)}</strong></div>
+                <div class="admin-product-row-detail">
+                    <div class="admin-product-row-detail-content">
+                        <div class="admin-product-row-image">
+                            ${product.image ? `<img src="${product.image}" alt="${product.title}">` : `<span class="large-emoji">${product.emoji || '📦'}</span>`}
+                        </div>
+                        <div class="admin-product-row-detail-info">
+                            <div class="admin-product-row-discount">
+                                💰 Descuento: <strong>${discountStr}% OFF</strong> | Ahorras: <strong>${formatPrice(product.originalPrice - product.offerPrice)}</strong>
+                            </div>
+                            <div class="admin-product-row-stock-info">
+                                Stock actual: <strong>${stockVal} unidades</strong>
+                            </div>
+                        </div>
+                        <div class="admin-product-row-actions">
+                            <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', -1)" title="Restar stock">➖</button>
+                            <button class="btn-icon btn-edit" onclick="openEditModal('${product.id}')" title="Editar">✏️</button>
+                            <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', 1)" title="Sumar stock">➕</button>
+                            <button class="btn-icon btn-delete" onclick="deleteProductConfirm('${product.id}')" title="Eliminar">🗑️</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="admin-product-actions">
-                <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', -1)" title="Restar stock">➖</button>
-                <button class="btn-icon btn-edit" onclick="openEditModal('${product.id}')" title="Editar">✏️</button>
-                <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', 1)" title="Sumar stock">➕</button>
-                <button class="btn-icon btn-delete" onclick="deleteProductConfirm('${product.id}')" title="Eliminar">🗑️</button>
+            `;
+        }).join('');
+    } else {
+        container.style.flexDirection = '';
+        container.innerHTML = products.map(product => `
+            <div class="admin-product-item">
+                <div class="admin-product-image">
+                    ${product.image ? `<img src="${product.image}" alt="${product.title}">` : product.emoji}
+                </div>
+                <div class="admin-product-info">
+                    <div class="admin-product-title">${product.title}</div>
+                    <div class="admin-product-prices">
+                        <span class="admin-product-original">${formatPrice(product.originalPrice)}</span>
+                        <span class="admin-product-offer">${formatPrice(product.offerPrice)}</span>
+                        <span class="admin-product-discount">${calculateDiscount(product.originalPrice, product.offerPrice)}% OFF</span>
+                    </div>
+                    <div class="admin-product-stock">Stock: <strong>${typeof product.quantity === 'number' ? product.quantity : (product.quantity || 0)}</strong></div>
+                </div>
+                <div class="admin-product-actions">
+                    <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', -1)" title="Restar stock">➖</button>
+                    <button class="btn-icon btn-edit" onclick="openEditModal('${product.id}')" title="Editar">✏️</button>
+                    <button class="btn-icon btn-stock" onclick="changeProductStock('${product.id}', 1)" title="Sumar stock">➕</button>
+                    <button class="btn-icon btn-delete" onclick="deleteProductConfirm('${product.id}')" title="Eliminar">🗑️</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    }
+}
+
+function switchProductView(viewType) {
+    if (viewType !== 'grid' && viewType !== 'list') return;
+    currentProductView = viewType;
+    localStorage.setItem('adminProductView', viewType);
+
+    // Actualizar clases de botones
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnList = document.getElementById('btnViewList');
+    if (btnGrid && btnList) {
+        if (viewType === 'grid') {
+            btnGrid.classList.add('active');
+            btnList.classList.remove('active');
+        } else {
+            btnList.classList.add('active');
+            btnGrid.classList.remove('active');
+        }
+    }
+
+    loadAndDisplayProducts();
+}
+
+function toggleProductRowExpansion(productId) {
+    const row = document.querySelector(`.admin-product-row[data-product-id="${productId}"]`);
+    if (!row) return;
+
+    const isExpanded = row.classList.contains('expanded');
+
+    // Cerrar las demás filas primero (efecto acordeón)
+    document.querySelectorAll('.admin-product-row.expanded').forEach(r => {
+        if (r !== row) {
+            r.classList.remove('expanded');
+            const arrow = r.querySelector('.admin-product-row-arrow');
+            if (arrow) arrow.textContent = '▼';
+        }
+    });
+
+    if (isExpanded) {
+        row.classList.remove('expanded');
+        const arrow = row.querySelector('.admin-product-row-arrow');
+        if (arrow) arrow.textContent = '▼';
+    } else {
+        row.classList.add('expanded');
+        const arrow = row.querySelector('.admin-product-row-arrow');
+        if (arrow) arrow.textContent = '▲';
+    }
+}
+
+function getCategoryLabel(category) {
+    const labels = {
+        vegetables: '🥬 Frutas y Verduras',
+        meats: '🍗 Carnes y Pollo',
+        dairy: '🥛 Lácteos y Huevos',
+        pantry: '🥫 Despensa'
+    };
+    return labels[category] || category || 'Sin categoría';
 }
 
 function updateProductCount() {
@@ -562,6 +682,8 @@ try {
         window.addAdminEmail = addAdminEmail;
         window.removeAdminEmail = removeAdminEmail;
         window.loadAdminEmails = loadAdminEmails;
+        window.switchProductView = switchProductView;
+        window.toggleProductRowExpansion = toggleProductRowExpansion;
     }
 } catch (e) {
     /* noop */
