@@ -94,7 +94,9 @@ function renderUsersTable(users) {
                 <span style="font-size:0.78rem;color:rgba(240,253,244,0.5);white-space:nowrap;">${fechaStr}</span>
             </td>
             <td class="users-td">
-                <button class="btn-delete-user" data-user-id="${user.id}" type="button">Eliminar</button>
+                ${(user.correo && user.correo.toLowerCase() === 'jhon.jeho@gmail.com')
+                    ? '<span style="display:inline-flex;align-items:center;padding:2px 8px;background:rgba(132,204,22,0.12);border:1px solid rgba(132,204,22,0.25);border-radius:9999px;font-size:0.68rem;font-weight:700;color:#84cc16;letter-spacing:0.04em;">⭐ Principal</span>'
+                    : `<button class="btn-delete-user" data-user-id="${user.id}" data-user-email="${user.correo || ''}" data-user-role="${user.rol || ''}" type="button">Eliminar</button>`}
             </td>
         </tr>`;
     }).join('');
@@ -103,9 +105,35 @@ function renderUsersTable(users) {
     deleteButtons.forEach(btn => {
         btn.addEventListener('click', async () => {
             const userId = btn.dataset.userId;
+            const userEmail = btn.dataset.userEmail;
+            const userRole = btn.dataset.userRole;
             if (!userId) return;
+
+            if (userEmail && userEmail.toLowerCase() === 'jhon.jeho@gmail.com') {
+                alert('No se puede eliminar al administrador principal.');
+                return;
+            }
+
             if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
             try {
+                // Si es un administrador, también quitarlo de config/admins
+                if (userRole === 'admin' && userEmail) {
+                    try {
+                        const ref = db.collection('config').doc('admins');
+                        const doc = await ref.get();
+                        if (doc.exists && Array.isArray(doc.data().emails)) {
+                            const emails = doc.data().emails.map(e => String(e).toLowerCase());
+                            const filtered = emails.filter(e => e !== userEmail.toLowerCase());
+                            await ref.set({ emails: filtered }, { merge: true });
+                            if (typeof ADMIN_EMAILS !== 'undefined') {
+                                ADMIN_EMAILS = filtered;
+                            }
+                        }
+                    } catch (adminErr) {
+                        console.warn('[MetaOfertas] No se pudo quitar de config/admins:', adminErr);
+                    }
+                }
+
                 await db.collection('usuarios').doc(userId).delete();
                 if (typeof showAdminToast === 'function') {
                     showAdminToast('✅ Usuario eliminado correctamente', 'success');

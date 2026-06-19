@@ -536,6 +536,19 @@ async function removeAdminEmail(email) {
         }
         await ref.set({ emails: filtered }, { merge: true });
         try { ADMIN_EMAILS = filtered; } catch (e) {}
+
+        // También eliminar de la colección 'usuarios' en Firestore
+        try {
+            const userSnapshot = await db.collection('usuarios').where('correo', '==', email.toLowerCase()).get();
+            const batch = db.batch();
+            userSnapshot.forEach(userDoc => {
+                batch.delete(userDoc.ref);
+            });
+            await batch.commit();
+        } catch (userErr) {
+            console.warn('[Admin] Error al intentar eliminar el usuario de la colección usuarios:', userErr);
+        }
+
         renderAdminEmailsList(filtered);
         return filtered;
     } catch (err) {
