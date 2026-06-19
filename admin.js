@@ -531,7 +531,7 @@ async function removeAdminEmail(email) {
             emails = doc.data().emails.map(e => String(e).toLowerCase());
         }
         const filtered = emails.filter(e => e !== email.toLowerCase());
-        if (filtered.includes(PROTECTED_ADMIN_EMAIL) || email.toLowerCase() === PROTECTED_ADMIN_EMAIL) {
+        if (!filtered.includes(PROTECTED_ADMIN_EMAIL) || email.toLowerCase() === PROTECTED_ADMIN_EMAIL) {
             throw new Error('Este administrador no puede ser eliminado.');
         }
         await ref.set({ emails: filtered }, { merge: true });
